@@ -1,0 +1,22 @@
+{
+  "name": "agent-plugins",
+  "owner": {
+    "name": "MisterZhouZhou",
+    "email": "MisterZhouZhou@none.com"
+  },
+  "metadata": {
+    "description": "MisterZhouZhou's Agent plugins",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "draw-skills",
+      "description": "Collection of draw skills",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/chrome-extension-icon-generator"
+      ]
+    }
+  ]
+}
