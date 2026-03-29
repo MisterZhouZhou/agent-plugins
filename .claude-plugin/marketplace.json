@@ -15,7 +15,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/chrome-extension-icon-generator"
+        "./skills/chrome-extension-icon-generator",
+        "./skills/image-size-generator"
       ]
     }
   ]
