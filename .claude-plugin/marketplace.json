@@ -18,6 +18,15 @@
         "./skills/chrome-extension-icon-generator",
         "./skills/image-size-generator"
       ]
+    },
+    {
+      "name": "yuque-skills",
+      "description": "Yuque knowledge base search skills",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/yuque-kb-search"
+      ]
     }
   ]
 }
