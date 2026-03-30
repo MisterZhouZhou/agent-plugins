@@ -1,0 +1,4 @@
+interface:
+  display_name: "语雀前端需求提炼"
+  short_description: "抓取语雀文档，清洗为 Markdown，并整理成前端技术需求文档"
+  default_prompt: "基于语雀文档链接或 repo namespace + doc slug 拉取正文，清洗语雀 HTML 为 Markdown，再根据模板整理为前端技术实现需求文档。"

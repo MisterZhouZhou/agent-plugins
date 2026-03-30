@@ -25,7 +25,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/yuque-kb-search"
+        "./skills/yuque-kb-search",
+        "./skills/yuque-frontend-requirements"
       ]
     }
   ]
