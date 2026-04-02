@@ -64,60 +64,62 @@
 - “查一下某个业务项目的需求文档”
 - “找语雀里 SDK 调用方式，并给示例”
 
+需要的环境变量：
+
+- `YUQUE_TOKEN`
+  语雀开放 API Token，必填。用于访问语雀知识库接口并读取文档内容。
+
 详情见：
 
 - `skills/yuque-kb-search/SKILL.md`
 - `skills/yuque-kb-search/references/yuque-api.md`
 
-## 使用方式
+### 4. grok-imagine-video
 
-### 通过 Skill 触发
+用途：
 
-如果 Agent 运行时已经接入本仓库中的 skills，用户只要在问题中提到相关场景，Agent 会按 `SKILL.md` 的描述自动触发对应技能。
+- 对接 xAI Grok Imagine API，支持文生图、图像编辑、文生视频、图生视频、视频编辑
+- 适合通过自然语言生成图片或视频，或对现有图片、视频素材进行编辑
 
-例如：
+适用请求示例：
 
-- “为 Chrome 扩展生成 128/48/16 图标”
-- “把这张图导出成 1200x630 和 512x512”
-- “检索语雀知识库里某个 SDK 的导航参数”
+- “生成一段夕阳海边的短视频”
+- “把这张静态图片做成会动的视频”
+- “给这段视频加上暖色夕阳滤镜”
 
-### 直接运行语雀检索脚本
+需要的环境变量：
 
-`yuque-kb-search` 附带了一个可直接运行的脚本：
+- `XAI_API_KEY`
+  xAI API Key，必填。用于调用 Grok Imagine API。
+- `XAI_API_BASE_URL`
+  可选。用于覆盖默认 API 地址；未设置时默认使用 `https://api.x.ai/v1`。
+- `XAI_IMAGE_MODEL`
+  可选。用于覆盖默认图片模型名称；未设置时使用 xAI 默认值。
+- `XAI_VIDEO_MODEL`
+  可选。用于覆盖默认视频模型名称；未设置时使用 xAI 默认值。
 
-```bash
-python3 skills/yuque-kb-search/scripts/yuque_search.py --help
-```
+备注：
 
-#### 1. 配置 Token
+- 原作者Github地址
+  https://github.com/devvgwardo/grok-imagine-video
 
-```bash
-export YUQUE_TOKEN=your_token_here
-```
+### 5. yuque-frontend-requirements
 
-也可以通过命令行显式传入：
+用途：
 
-```bash
-python3 skills/yuque-kb-search/scripts/yuque_search.py --token "your_token_here" search "SDK 文档"
-```
+- 拉取并清洗语雀文档内容，转为可读 Markdown
+- 基于语雀 PRD、交互说明、页面方案等内容整理前端技术实现需求文档
 
-#### 2. 搜索文档
+适用请求示例：
 
-```bash
-python3 skills/yuque-kb-search/scripts/yuque_search.py search "导航栏 配置" --type doc --top-k 5
-```
+- “把这篇语雀需求文档整理成前端开发文档”
+- “根据语雀链接提炼页面字段、交互和接口需求”
+- “把语雀 PRD 转成前端可执行的技术文档”
 
-#### 3. 搜索后补抓正文
+需要的环境变量：
 
-```bash
-python3 skills/yuque-kb-search/scripts/yuque_search.py rag "项目需求文档" --type doc --top-k 3 --raw --max-content-chars 5000
-```
-
-#### 4. 直接读取某篇文档
-
-```bash
-python3 skills/yuque-kb-search/scripts/yuque_search.py read --url "https://www.yuque.com/org/repo/slug" --raw
-```
+- `YUQUE_TOKEN`
+  语雀开放 API Token。用于读取私有或受限语雀文档；如果命令行已显式传入 `--token`，则可以不依赖该环境变量。
 
 ## 维护建议
 
