@@ -21,13 +21,22 @@
       ]
     },
     {
-      "name": "yuque-skills",
+      "name": "project-skills",
       "description": "Yuque knowledge base search skills",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/yuque-kb-search",
         "./skills/yuque-frontend-requirements"
+      ]
+    },
+    {
+      "name": "dev-skills",
+      "description": "Cross-platform development skills",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/uni-app-x"
       ]
     }
   ]

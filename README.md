@@ -10,7 +10,11 @@
 │   └── marketplace.json
 └── skills/
     ├── chrome-extension-icon-generator/
+    ├── grok-imagine-video/
     ├── image-size-generator/
+    ├── safari-web-extension/
+    ├── uni-app-x/
+    ├── yuque-frontend-requirements/
     └── yuque-kb-search/
 ```
 
@@ -21,8 +25,12 @@
 - `draw-skills`
   - `chrome-extension-icon-generator`
   - `image-size-generator`
-- `yuque-skills`
+  - `grok-imagine-video`
+- `project-skills`
   - `yuque-kb-search`
+  - `yuque-frontend-requirements`
+- `dev-skills`
+  - `uni-app-x`
 
 ## Skills 一览
 
@@ -120,6 +128,32 @@
 
 - `YUQUE_TOKEN`
   语雀开放 API Token。用于读取私有或受限语雀文档；如果命令行已显式传入 `--token`，则可以不依赖该环境变量。
+
+### 6. uni-app-x
+
+用途：
+
+- 辅助 AI 开发 uni-app x 跨平台应用
+- 涵盖 UTS 语言、uvue 渲染引擎、组件、API、CSS、插件开发等完整知识体系
+- 支持 Android、iOS、HarmonyOS、Web、微信小程序多端开发指导
+
+适用请求示例：
+
+- "创建一个 uni-app x 项目页面"
+- "帮我写一个 uni-app x 的列表组件"
+- "UTS 和 TypeScript 有什么区别"
+- "uni-app x 的 CSS 支持哪些属性"
+
+详情见：
+
+- `skills/uni-app-x/SKILL.md`
+- 官方文档：https://doc.dcloud.net.cn/uni-app-x/
+
+### 7. safari-web-extension
+
+用途：
+
+- Safari Web Extension 开发指南
 
 ## 维护建议
 
