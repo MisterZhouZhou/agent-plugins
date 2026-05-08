@@ -1,0 +1,4 @@
+interface:
+  display_name: "语雀前端需求提炼"
+  short_description: "抓取语雀文档并输出前端技术实现需求"
+  default_prompt: "使用语雀 API 拉取文档内容，清洗为 Markdown，并根据模板输出前端技术实现需求文档。"

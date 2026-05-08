@@ -29,8 +29,10 @@
 - `project-skills`
   - `yuque-kb-search`
   - `yuque-frontend-requirements`
+  - `yuque-requirements`
 - `dev-skills`
   - `uni-app-x`
+  - `tauri-desktop`
 
 ## Skills 一览
 
@@ -154,6 +156,47 @@
 用途：
 
 - Safari Web Extension 开发指南
+
+### 8. tauri-desktop
+
+用途：
+
+- Rust 桌面端开发技能，基于 Tauri v2 框架
+- 提供向导式项目初始化，支持功能模块按需选择
+- 支持数据库、日志系统、系统托盘、自动启动、深链接、自动更新等模块
+
+适用请求示例：
+
+- "创建一个 Rust 桌面应用"
+- "初始化一个 Tauri 项目"
+- "给应用添加数据库支持和系统托盘"
+
+详情见：
+
+- `skills/tauri-desktop/SKILL.md`
+
+### 9. yuque-requirements
+
+用途：
+
+- 拉取语雀文档内容，清洗 HTML/CSS 包裹内容为可读 Markdown
+- 基于语雀 PRD、需求说明提炼技术实现需求文档
+- 支持前端(JavaScript/TypeScript)和后端(Java)两种技术栈
+
+适用请求示例：
+
+- "把这个语雀需求文档转成前端技术文档"
+- "根据语雀链接提炼后端接口需求"
+- "把语雀 PRD 转成技术可执行的需求文档"
+
+需要的环境变量：
+
+- `YUQUE_TOKEN`
+  语雀开放 API Token，必填。用于读取语雀文档内容。
+
+详情见：
+
+- `skills/yuque-requirements/SKILL.md`
 
 ## 维护建议
 

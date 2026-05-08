@@ -27,7 +27,8 @@
       "strict": false,
       "skills": [
         "./skills/yuque-kb-search",
-        "./skills/yuque-frontend-requirements"
+        "./skills/yuque-frontend-requirements",
+        "./skills/yuque-requirements"
       ]
     },
     {
@@ -36,7 +37,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/uni-app-x"
+        "./skills/uni-app-x",
+        "./skills/tauri-desktop"
       ]
     }
   ]
