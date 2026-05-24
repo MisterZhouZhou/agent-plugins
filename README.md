@@ -9,6 +9,7 @@
 ├── .claude-plugin/
 │   └── marketplace.json
 └── skills/
+    ├── azure-ssml-tts/
     ├── chrome-extension-icon-generator/
     ├── grok-imagine-video/
     ├── image-size-generator/
@@ -26,6 +27,7 @@
   - `chrome-extension-icon-generator`
   - `image-size-generator`
   - `grok-imagine-video`
+  - `azure-ssml-tts`
 - `project-skills`
   - `yuque-kb-search`
   - `yuque-frontend-requirements`
@@ -197,6 +199,31 @@
 详情见：
 
 - `skills/yuque-requirements/SKILL.md`
+
+### 10. azure-ssml-tts
+
+用途：
+
+- 通过 Azure Speech REST API 生成中文 MP3 旁白音频
+- 支持 SSML phoneme 标签，精确控制多音字发音（如"难"字）
+- 适合西游记等古典内容的试听音频生成
+
+适用请求示例：
+
+- "生成一段带多音字标注的中文语音"
+- "用 Azure TTS 生成 static/voice/001.mp3"
+- "给西游记章节标题生成旁白音频"
+
+需要的环境变量：
+
+- `AZURE_SPEECH_KEY`
+  Azure 语音服务订阅密钥，必填。
+- `AZURE_SPEECH_REGION`
+  Azure 服务区域，必填（如 `eastasia`）。
+
+详情见：
+
+- `skills/azure-ssml-tts/SKILL.md`
 
 ## 维护建议
 

@@ -17,7 +17,8 @@
       "skills": [
         "./skills/chrome-extension-icon-generator",
         "./skills/image-size-generator",
-        "./skills/grok-imagine-video"
+        "./skills/grok-imagine-video",
+        "./skills/azure-ssml-tts"
       ]
     },
     {
