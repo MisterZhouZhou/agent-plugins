@@ -38,7 +38,8 @@
       "strict": false,
       "skills": [
         "./skills/uni-app-x",
-        "./skills/tauri-desktop"
+        "./skills/tauri-desktop",
+        "./skills/cold-water"
       ]
     }
   ]

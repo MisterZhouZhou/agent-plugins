@@ -9,6 +9,7 @@
 ├── .claude-plugin/
 │   └── marketplace.json
 └── skills/
+    ├── cold-water/
     ├── chrome-extension-icon-generator/
     ├── grok-imagine-video/
     ├── image-size-generator/
@@ -33,6 +34,7 @@
 - `dev-skills`
   - `uni-app-x`
   - `tauri-desktop`
+  - `cold-water`
 
 ## Skills 一览
 
@@ -197,6 +199,26 @@
 详情见：
 
 - `skills/yuque-requirements/SKILL.md`
+
+### 10. cold-water
+
+用途：
+
+- 泼冷水模式：让 AI 当魔鬼代言人而非 Yes Man
+- 覆盖完整开发流程的十大审查场景：需求审查、Code Review、架构选型、产品决策、个人决策、通用泼冷水、上线前风险、测试盲区、需求膨胀、上线后复盘
+- 三级泼水强度（微凉/冷水/冰桶），持续泼水直到泼不出为止
+
+适用请求示例：
+
+- "泼冷水：我想做一个 AI 写周报的工具"
+- "帮我挑刺这个技术方案"
+- "准备上线了，帮我做风险审查"
+- "这个架构选型有没有问题"
+- "上线出了事故，帮我做复盘"
+
+详情见：
+
+- `skills/cold-water/SKILL.md`
 
 ## 维护建议
 
