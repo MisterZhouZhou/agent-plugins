@@ -1,0 +1,3 @@
+display_name: API Generate Image
+short_description: Generate images via OpenAI-compatible Image API
+default_prompt: Generate an image using the configured API endpoint and key. Default model is gpt-image-2.
