@@ -101,6 +101,12 @@ Choose the smallest relevant reference file before editing code:
    - Load `references/features/codegap.md` for JS-to-UTS migration: strong typing and native rendering differences.
 
 9. **UTS plugin work**
+   - Load `references/guides/plugins/plugin-ecosystem.md` for plugin market, uni_modules, paid plugins, plugin installation/update/publish flow, and package.json compatibility metadata.
+   - Load `references/guides/plugins/plugin-publish-sell.md` for plugin publishing, paid plugin encryption, trial, revenue, and settlement rules.
+   - Load `references/guides/plugins/uts-plugin-api.md` for UTS API plugin basics, interface.uts, platform directory priority, and native resource configuration.
+   - Load `references/guides/plugins/uts-components.md` for UTS standard-mode components, uni-app compatible-mode components, native-view, props/events/methods, and component mode selection.
+   - Load `references/guides/plugins/uts-native-hybrid.md` for Kotlin/Java/Swift/ArkTS/JS native hybrid coding inside UTS plugins.
+   - Load `references/guides/plugins/uts-platform-guides.md` for Android/iOS/HarmonyOS UTS development, CocoaPods, and Swift Package Manager dependencies.
    - Load `references/guides/plugins/uts-plugin-development.md` for `uni_modules` plugin structure, API plugins, component plugins, and per-platform implementation directories.
    - Load `references/guides/advanced/native-sdk.md` for native SDK integration (iOS/Android/HarmonyOS hybrid development).
 
@@ -122,6 +128,7 @@ Choose the smallest relevant reference file before editing code:
 - Use `rpx` for responsive sizing and explicit fixed units only when a fixed physical size is intentional.
 - Test target platforms separately because Android, iOS, HarmonyOS, Web, and Mini Programs do not share identical runtime behavior.
 - Use `list-view` for large lists instead of rendering long `v-for` lists inside `scroll-view`.
+- When answering from this skill's bundled documentation, always append a short "文档引用" section listing the specific reference/template files and line numbers used, such as `references/core/lifecycle.md:23` or `references/core/lifecycle.md:34-37`. Check line numbers with `nl -ba`, `rg -n`, or an equivalent source view. Cite only the lines actually used as evidence. Do not cite `SKILL.md` in "文档引用"; it is an instruction/index file, not supporting product documentation. If no bundled reference/template document was needed, say so explicitly instead of inventing citations.
 
 ## References and templates
 
@@ -208,6 +215,12 @@ Choose the smallest relevant reference file before editing code:
 - `references/guides/platform-specific/h5.md` - Web/H5 routing, browser APIs, and responsive behavior
 - `references/guides/platform-specific/miniprogram.md` - Mini Program configuration and API constraints
 - `references/guides/platform-specific/nvue.md` - nvue-to-UVue migration notes and style compatibility
+- `references/guides/plugins/plugin-ecosystem.md` - plugin market, uni_modules, paid plugins, publishing, and package metadata
+- `references/guides/plugins/plugin-publish-sell.md` - plugin publishing, paid plugin encryption, trial, revenue, settlement
+- `references/guides/plugins/uts-plugin-api.md` - UTS API plugin basics, interface.uts, platform directories, native resources
+- `references/guides/plugins/uts-components.md` - UTS standard-mode and uni-app compatible-mode components
+- `references/guides/plugins/uts-native-hybrid.md` - UTS native hybrid coding with Kotlin/Java/Swift/ArkTS/JS
+- `references/guides/plugins/uts-platform-guides.md` - Android/iOS/HarmonyOS UTS platform notes, CocoaPods, SPM
 - `references/guides/plugins/uts-plugin-development.md` - UTS plugin structure and implementation guidance
 - `references/features/web.md` - Web vs App compilation differences and Web-specific limitations
 - `references/features/adapt.md` - wide-screen adaptation (leftWindow/rightWindow for Web, component-level for all)
