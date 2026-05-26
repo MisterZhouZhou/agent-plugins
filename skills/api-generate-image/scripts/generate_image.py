@@ -24,6 +24,7 @@ import sys
 import time
 from typing import Any, Optional, Tuple
 from urllib.parse import urlparse, urlunparse
+from urllib.request import Request, urlopen
 
 CONFIG_DIR = Path.home() / ".codex" / "api-generate-image"
 CONFIG_PATH = CONFIG_DIR / "config.json"
@@ -201,13 +202,17 @@ def extract_image_bytes(result: Any) -> bytes:
     if not data:
         die("Image API response did not include data[].")
     first = data[0]
+    url = item_get(first, "url") or item_get(first, "image_url")
     b64 = item_get(first, "b64_json") or item_get(first, "base64")
+    if isinstance(b64, str) and b64.lstrip().startswith(("http://", "https://")):
+        url = b64.strip()
+        b64 = None
+    if url:
+        req = Request(str(url), headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(req, timeout=120) as response:
+            return response.read()
     if not b64:
-        # Keep this intentionally narrow; URL outputs vary and often need auth/download policy.
-        url = item_get(first, "url")
-        if url:
-            die("Image API returned a URL instead of base64. Re-run with a provider that returns b64_json, or extend this script for URL downloads.")
-        die("Image API response did not include data[0].b64_json.")
+        die("Image API response did not include data[0].b64_json or a downloadable URL.")
     if isinstance(b64, str) and b64.lstrip().startswith("data:") and "," in b64:
         b64 = b64.split(",", 1)[1]
     return base64.b64decode(b64)
