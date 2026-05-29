@@ -1,0 +1,5 @@
+interface:
+  display_name: "GEO"
+  short_description: "生成式引擎优化与AI搜索引用可见性审计和内容改写流程"
+  brand_color: "#0F766E"
+  default_prompt: "Use $geo to audit my website for AI search visibility and citation readiness."

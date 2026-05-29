@@ -1,0 +1,23 @@
+{
+  "skill_name": "geo",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "用 $geo 帮我审计 https://example.com 为什么很少被 ChatGPT 或 Perplexity 引用，并给我一个优先级路线图。",
+      "expected_output": "应包含技术可访问性检查、robots/sitemap/schema/content signals、Prompt 覆盖表和按优先级排序的 GEO 改进建议。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "用 $geo 把这段 SaaS 产品页文案改成更容易被 AI 搜索引用的版本：我们是最好的项目管理平台，适合所有团队，功能强大，价格合理。",
+      "expected_output": "应指出原文问题，改写为更具体、可验证、结构化的内容，并列出需要用户补充的真实证据，不应编造数据或客户。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "用 $geo 给我解释 llms.txt、robots.txt、schema 和 sitemap 在 AI 搜索优化里的区别，哪些是必须做，哪些只是可选。",
+      "expected_output": "应区分正式搜索基础设施和实验性做法，说明 Google/OpenAI 等平台差异，并避免把 llms.txt 描述为确定排名因素。",
+      "files": []
+    }
+  ]
+}

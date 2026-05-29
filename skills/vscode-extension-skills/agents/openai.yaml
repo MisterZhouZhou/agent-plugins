@@ -1,0 +1,7 @@
+interface:
+  display_name: "VS Code Extension Skill"
+  short_description: "VS Code 扩展开发、Webview 与打包助手"
+  default_prompt: "使用 $vscode-extension-skill 帮我实现一个符合当前项目约定的 VS Code 扩展功能。"
+policy:
+  allow_implicit_invocation: true
+

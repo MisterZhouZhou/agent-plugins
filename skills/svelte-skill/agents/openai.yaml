@@ -1,0 +1,6 @@
+interface:
+  display_name: "Svelte Skill"
+  short_description: "Svelte/SvelteKit 开发、迁移与排障助手"
+  default_prompt: "使用 $svelte-skill 帮我实现一个符合当前项目约定的 Svelte 功能。"
+policy:
+  allow_implicit_invocation: true

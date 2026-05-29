@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js Skill Demo</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="stage" aria-label="Three.js demo">
+        <canvas id="scene"></canvas>
+
+        <header class="hud topbar">
+          <div>
+            <p class="eyebrow">threejs-skill demo</p>
+            <h1>Interactive PBR Stage</h1>
+          </div>
+          <div class="metrics" aria-live="polite">
+            <span id="drawCalls">calls 0</span>
+            <span id="triangles">triangles 0</span>
+          </div>
+        </header>
+
+        <aside class="hud panel" aria-label="Scene controls">
+          <button id="toggleSpin" class="control-button" type="button" aria-pressed="true">
+            Pause
+          </button>
+          <button id="toggleHelpers" class="control-button" type="button" aria-pressed="true">
+            Helpers
+          </button>
+          <label class="slider-row" for="exposure">
+            <span>Exposure</span>
+            <input id="exposure" type="range" min="0.6" max="1.8" step="0.05" value="1" />
+          </label>
+        </aside>
+
+        <footer class="hud status">
+          <span id="pickState">Hover or click an object</span>
+        </footer>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

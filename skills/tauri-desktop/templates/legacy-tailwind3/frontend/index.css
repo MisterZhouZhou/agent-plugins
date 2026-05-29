@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #14b8a6;
+  --color-accent: #f59e0b;
+}
+
+[data-theme='appDark'] {
+  --color-primary: #60a5fa;
+  --color-secondary: #2dd4bf;
+  --color-accent: #fbbf24;
+}

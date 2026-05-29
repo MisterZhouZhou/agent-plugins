@@ -1,0 +1,6 @@
+interface:
+  display_name: "Electron Skills"
+  short_description: "Electron 与 electron-egg 桌面应用开发助手"
+  default_prompt: "使用 $electron-skills 帮我实现一个符合当前项目约定的 Electron 功能。"
+policy:
+  allow_implicit_invocation: true

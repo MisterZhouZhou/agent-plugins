@@ -18,7 +18,8 @@
         "./skills/chrome-extension-icon-generator",
         "./skills/image-size-generator",
         "./skills/grok-imagine-video",
-        "./skills/azure-ssml-tts"
+        "./skills/azure-ssml-tts",
+        "./skills/api-generate-image"
       ]
     },
     {
@@ -29,7 +30,8 @@
       "skills": [
         "./skills/yuque-kb-search",
         "./skills/yuque-frontend-requirements",
-        "./skills/yuque-requirements"
+        "./skills/yuque-requirements",
+        "./skills/geo-skill"
       ]
     },
     {
@@ -40,6 +42,15 @@
       "skills": [
         "./skills/uni-app-x",
         "./skills/tauri-desktop",
+        "./skills/electron-skills",
+        "./skills/iOS-skill",
+        "./skills/react-skill",
+        "./skills/vue-skill",
+        "./skills/svelte-skill",
+        "./skills/threejs-skill",
+        "./skills/safari-web-extension",
+        "./skills/vscode-extension-skills",
+        "./skills/cli-session-manager",
         "./skills/cold-water"
       ]
     }

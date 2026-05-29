@@ -1,0 +1,18 @@
+{
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "npm run typecheck",
+    "build": "npm run sync-version && tsc && vite build",
+    "preview": "vite preview",
+    "pretauri:dev": "npm run typecheck",
+    "tauri:dev": "tauri dev",
+    "pretauri": "npm run typecheck",
+    "tauri": "npm run sync-version && tauri",
+    "package": "npm run sync-version && tauri build",
+    "package:app": "npm run sync-version && tauri build --bundles app",
+    "package:debug": "npm run sync-version && tauri build --debug",
+    "package:mac:universal": "npm run sync-version && tauri build --target universal-apple-darwin",
+    "sync-version": "node scripts/sync-version.js"
+  }
+}

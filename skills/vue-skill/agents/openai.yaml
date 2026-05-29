@@ -1,0 +1,7 @@
+interface:
+  display_name: "Vue Skill"
+  short_description: "Vue 2/3 开发、迁移与排障助手"
+  default_prompt: "使用 $vue-skill 帮我实现一个符合当前项目约定的 Vue 功能。"
+policy:
+  allow_implicit_invocation: true
+

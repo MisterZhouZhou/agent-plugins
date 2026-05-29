@@ -1,9 +1,8 @@
 ---
 name: rust-desktop
 description: |
-  Rust 桌面端开发技能，基于 Tauri v2 框架。当用户想要创建、初始化或开发 Rust 桌面应用程序时触发。
-  适用场景：创建新的 Rust 桌面项目、初始化可执行的 Tauri 项目、设置 Rust 桌面开发环境、构建 Rust 桌面应用。
-  支持向导式初始化，可按需选择功能模块，支持后续补充配置。
+  Rust 桌面端开发技能，基于 Tauri v2 框架。当用户想要创建、初始化、配置、打包或发布 Rust/Tauri 桌面应用程序时触发。
+  默认使用官方 Tauri CLI 创建 React + TypeScript 项目，并按用户选择补充前端依赖、国际化、主题、自动更新、打包发布和 GitHub Workflows。
 compatibility: |
   - Rust toolchain (rustup, cargo)
   - Node.js 18+
@@ -11,851 +10,197 @@ compatibility: |
   - Tauri CLI v2
 ---
 
-# Rust 桌面端开发 - 标准化流程
+# Rust 桌面端开发 Skill
 
-本 skill 基于 cockpit-tools 项目最佳实践，提供 Tauri v2 + Rust 桌面应用向导式开发工作流。
+本 skill 参考 `jlcodes99/cockpit-tools` 的通用配置风格，但不复制业务代码。目标是用官方 Tauri CLI 创建项目，然后用本 skill 的 `templates/` 目录补齐可复用配置。
 
-## 初始化流程概览
+## 核心规则
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    项目初始化向导                            │
-├─────────────────────────────────────────────────────────────┤
-│  1. 基础配置 ──▶ 2. 功能模块 ──▶ 3. 打包配置 ──▶ 4. 完成    │
-│      (必选)         (可选)          (可选)                   │
-└─────────────────────────────────────────────────────────────┘
-```
+1. 创建项目必须使用官方 CLI：`npm create tauri-app@latest`，禁止手写项目骨架替代。
+2. 初始化时保持轻量：只询问项目名和“需要哪些可选能力”。
+3. 基础配置默认添加：React、TypeScript、Vite、Tauri、Tailwind CSS v4、DaisyUI v5、clsx、tailwind-merge、版本同步脚本、基础主题色。
+4. 可复制文件模板必须优先来自 `templates/`，不要从 `SKILL.md` 正文临时拼大段代码。
+5. 修改后至少运行 `npm run typecheck` 和 `npm run build`；打包冒烟优先运行 `npm run package:app`。
+6. 默认使用最新模板轨道。只有用户明确要求 Tailwind v3、DaisyUI v4、PostCSS 或旧版兼容时，才使用 `templates/legacy-tailwind3/`。
 
----
+## 初始化问题
 
-## 第一步：基础配置（必选）
+如果用户没有给项目名，先问项目名。然后只问一个能力选择问题：
 
-### 1.1 询问项目基本信息
+```text
+需要添加哪些可选能力？直接输入序号，空格或逗号分隔；输入 n 使用基础配置。
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| 项目名称 | `my-app` | 应用英文名 (kebab-case) |
-| 应用标题 | `My App` | 窗口标题 |
-| 应用标识符 | `com.example.my-app` | 唯一 ID |
-| 版本号 | `0.1.0` | 初始版本 |
-| 描述 | `A productivity tool` | 应用简介 |
-| 许可证 | `MIT` | 开源协议 |
-
-**询问项目名称：**
-
-```
-请输入项目名称（英文，kebab-case），输入 n 使用默认 "my-app"：
-> _
-```
-
-**确认配置：**
-
-```
-项目配置确认：
-
-┌─────────────────────────────────────────────────────┐
-│  1. 应用标题: My App                               │
-│  2. 标识符: com.example.my-app                   │
-│  3. 版本: 0.1.0                                   │
-│  4. 描述: A productivity tool                      │
-│  5. 许可证: MIT                                   │
-└─────────────────────────────────────────────────────┘
+1. 国际化 i18next + react-i18next
+2. 日期处理 date-fns
+3. 状态管理 zustand
+4. 图标 lucide-react
+5. 自动更新 @tauri-apps/plugin-updater + tauri-plugin-updater
+6. 文件系统 @tauri-apps/plugin-fs + tauri-plugin-fs
+7. 对话框 @tauri-apps/plugin-dialog + tauri-plugin-dialog
+8. 进程管理 @tauri-apps/plugin-process + tauri-plugin-process
+9. 系统通知 @tauri-apps/plugin-notification + tauri-plugin-notification
+10. 系统托盘 tray-icon
+11. 自动启动 tauri-plugin-autostart
+12. 深链接 tauri-plugin-deep-link + single-instance
+13. 打包发布配置 bundles + updater artifacts
+14. GitHub Workflows 构建矩阵 + tag release
 ```
 
-输入要修改的项号，输入 n 跳过：
-> _
+## 官方 CLI 创建项目
 
-### 1.2 使用脚手架创建项目
-
-**必须使用 `npm create tauri-app@latest` 创建项目，禁止手动创建文件：**
-
-请在目标目录下执行以下命令：
+在目标目录运行：
 
 ```bash
 npm create tauri-app@latest my-app -- --template react-ts --manager npm
-```
-
-脚手架会交互式询问：
-```
-? Project name (skipping will use "my-app") ›
-? Add npm scripts for: (选择 All)
-? Which template would you like to use? › (选择 TypeScript + React)
-```
-
-创建完成后进入项目目录并安装依赖：
-```bash
 cd my-app
 npm install
 ```
 
----
+注意：`create-tauri-app` 需要 TTY。代理执行时要用可交互终端运行；如果 CLI 继续询问 `Identifier`，直接使用默认值，除非用户明确提供了应用标识符。
 
-**询问用户：**
+## 依赖安装
 
-```
-请在终端中执行脚手架命令，完成后告诉我。
-
-输入 y 表示已完成：
-> _
-```
-
-### 1.3 基础 Cargo.toml (workspace)
-
-```toml
-[workspace]
-members = ["src-tauri"]
-resolver = "2"
-
-[workspace.dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-anyhow = "1.0"
-thiserror = "2"
-chrono = "0.4"
-dirs = "5.0"
-tokio = { version = "1", features = ["full"] }
-tracing = "0.1"
-tauri = { version = "2", features = ["macos-private-api", "tray-icon", "image-png"] }
-```
-
-### 1.4 基础 tauri.conf.json
-
-```json
-{
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "{{APP_TITLE}}",
-  "version": "{{VERSION}}",
-  "identifier": "{{IDENTIFIER}}",
-  "build": {
-    "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
-  },
-  "app": {
-    "macOSPrivateApi": true,
-    "windows": [
-      {
-        "label": "main",
-        "title": "{{APP_TITLE}}",
-        "width": 1280,
-        "height": 800,
-        "minWidth": 900,
-        "minHeight": 600,
-        "center": true
-      }
-    ]
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/48x48.png",
-      "icons/32x32.png",
-      "icons/16x16.png",
-      "icons/64x64.png",
-      "icons/128x128.png",
-      "icons/256x256.png",
-      "icons/512x512.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
-  }
-}
-```
-
----
-
-## 第二步：功能模块（可选 - 按需选择）
-
-### 2.1 询问功能模块
-
-**展示可选模块（带序号），直接输入序号选择，空格分隔多选：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  功能模块                                            │
-├─────────────────────────────────────────────────────┤
-│  1. [ ] 数据库支持 (SQLite)                         │
-│  2. [ ] 日志系统 (tracing)                         │
-│  3. [*] 系统托盘 (tray-icon)                       │
-│  4. [ ] 自动启动 (autostart)                       │
-│  5. [*] 系统通知 (notification)                     │
-│  6. [ ] 深链接 (deep-link)                         │
-│  7. [ ] 自动更新 (updater)                         │
-│  8. [*] 文件系统访问 (fs)                           │
-│  9. [*] 对话框 (dialog)                            │
-│ 10. [ ] 进程管理 (process)                          │
-└─────────────────────────────────────────────────────┘
-[*] = 默认选择
-
-直接输入序号（如 1,3,5），输入 n 跳过：
-> _
-```
-
-### 模块 A：数据库支持
-
-**添加依赖：**
-```toml
-rusqlite = { version = "0.32", features = ["bundled"] }
-```
-
-**创建 `src-tauri/src/modules/database.rs`：**
-```rust
-use rusqlite::{Connection, Result};
-use std::path::PathBuf;
-
-pub fn get_db_path() -> PathBuf {
-    dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("your-app")
-        .join("data.db")
-}
-
-pub fn init_db() -> Result<Connection> {
-    let conn = Connection::open(get_db_path())?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS items (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            created_at INTEGER NOT NULL
-        )",
-        [],
-    )?;
-    Ok(conn)
-}
-```
-
-### 模块 B：网络请求
-
-**添加依赖：**
-```toml
-reqwest = { version = "0.12", features = ["json", "gzip", "brotli", "deflate", "zstd", "stream"] }
-```
-
-### 模块 C：日志系统
-
-**添加依赖：**
-```toml
-tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }
-tracing-appender = "0.2"
-tracing-log = "0.2"
-```
-
-**lib.rs 中初始化：**
-```rust
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
-
-pub fn init_logging() {
-    let log_dir = dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("your-app")
-        .join("logs");
-    std::fs::create_dir_all(&log_dir).ok();
-
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, log_dir, "app.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-
-    tracing_subscriber::registry()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
-        .with(fmt::layer().with_writer(non_blocking))
-        .init();
-}
-```
-
-### 模块 D：系统托盘
-
-**tauri.conf.json 中已启用特性，已包含此模块。**
-
-**lib.rs 中添加托盘：**
-```rust
-use tauri::{Manager, menu::{Menu, MenuItem}, tray::TrayIconBuilder};
-
-pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let show = MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &quit])?;
-
-    let _tray = TrayIconBuilder::new()
-        .menu(&menu)
-        .tooltip("Your App Name")
-        .on_menu_event(|app, event| {
-            match event.id.as_ref() {
-                "quit" => {
-                    app.exit(0);
-                }
-                "show" => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        window.show().ok();
-                        window.set_focus().ok();
-                    }
-                }
-                _ => {}
-            }
-        })
-        .build(app)?;
-
-    Ok(())
-}
-```
-
-### 模块 E：自动启动
-
-**添加依赖：**
-```toml
-tauri-plugin-autostart = "2"
-```
-
-**lib.rs 中初始化：**
-```rust
-use tauri_plugin_autostart::MacosLauncher;
-
-app.handle().plugin(
-    tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--minimized"]))
-)?;
-```
-
-### 模块 F：单例模式
-
-**添加依赖：**
-```toml
-tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
-```
-
-**lib.rs 中初始化：**
-```rust
-plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
-}))
-```
-
-### 模块 G：深链接
-
-**添加依赖：**
-```toml
-tauri-plugin-deep-link = "2"
-```
-
-**tauri.conf.json 配置：**
-```json
-"plugins": {
-  "deep-link": {
-    "desktop": {
-      "schemes": ["your-app", "yourapp"]
-    }
-  }
-}
-```
-
-### 模块 H：自动更新
-
-**添加依赖：**
-```toml
-tauri-plugin-updater = "2"
-```
-
-**tauri.conf.json 配置：**
-```json
-"plugins": {
-  "updater": {
-    "pubkey": "YOUR_PUBLIC_KEY",
-    "endpoints": ["https://github.com/your-org/your-app/releases/latest/download/latest.json"]
-  }
-}
-```
-
-### 模块 I：系统通知
-
-**添加依赖：**
-```toml
-tauri-plugin-notification = "2"
-mac-notification-sys = "0.6"  # macOS
-```
-
-### 模块 J：文件系统
-
-**添加依赖：**
-```toml
-tauri-plugin-fs = "2"
-```
-
-### 模块 K：对话框
-
-**添加依赖：**
-```toml
-tauri-plugin-dialog = "2"
-```
-
-### 模块 L：进程管理
-
-**添加依赖：**
-```toml
-tauri-plugin-process = "2"
-```
-
----
-
-## 第三步：前端配置（可选）
-
-### 3.1 询问前端功能
-
-**展示可选功能（带序号），直接输入序号选择，空格分隔多选：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  前端功能                                            │
-├─────────────────────────────────────────────────────┤
-│  1. [*] React 框架                                  │
-│  2. [*] Tailwind CSS + DaisyUI                    │
-│  3. [ ] 国际化 (i18next)                           │
-│  4. [*] 状态管理 (zustand)                         │
-│  5. [ ] 图标库 (lucide-react)                      │
-│  6. [ ] 日期处理 (date-fns)                        │
-└─────────────────────────────────────────────────────┘
-[*] = 默认选择
-
-直接输入序号（如 1,3,5），输入 n 跳过：
-> _
-```
-┌─────────────────────────────────────────────────────┐
-│  前端功能                                            │
-├─────────────────────────────────────────────────────┤
-│  1. [*] React 框架                                  │
-│  2. [*] Tailwind CSS + DaisyUI                    │
-│  3. [*] 国际化 (i18next)                           │
-│  4. [*] 状态管理 (zustand)                         │
-│  5. [*] 图标库 (lucide-react)                      │
-│  6. [*] 日期处理 (date-fns)                        │
-└─────────────────────────────────────────────────────┘
-[*] = 默认选择
-
-直接输入序号（如 1,3,5），输入 n 跳过：
-> _
-```
-
-### 前端 package.json（基础）
-
-```json
-{
-  "name": "your-app-name",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
-  },
-  "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@tauri-apps/api": "^2"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "tailwindcss": "^4.0.0",
-    "daisyui": "^5.0.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4"
-  }
-}
-```
-
-### vite.config.ts
-
-```typescript
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-
-export default defineConfig(async () => ({
-  plugins: [react(), tailwindcss()],
-}));
-```
-
-### src/index.css
-
-```css
-@import "tailwindcss";
-@plugin "daisyui";
-```
-
-**注意：Tailwind v4 不再使用 `postcss.config.js`，`@tailwindcss/vite` 插件会自动处理。如存在该文件请删除。
-
-### 第四步：打包配置（可选）
-
-### 4.1 询问打包方式
-
-**展示可选打包方式（带序号），直接输入序号选择：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  打包方式                                            │
-├─────────────────────────────────────────────────────┤
-│  1. [*] macOS DMG (Apple Silicon + Intel)         │
-│  2. [*] macOS App                                 │
-│  3. [ ] Windows MSI                                 │
-│  4. [ ] Windows NSIS                                │
-│  5. [ ] Linux AppImage                              │
-│  6. [ ] Homebrew Tap                               │
-└─────────────────────────────────────────────────────┘
-[*] = 默认选择
-
-直接输入序号（如 1,3），输入 n 跳过：
-> _
-```
-
-### 打包 targets 配置
-
-```json
-"bundle": {
-  "targets": ["dmg", "app", "msi", "nsis", "deb", "appimage"],
-  "category": "public.app-category.productivity",
-  "shortDescription": "A short description",
-  "longDescription": "A long description of your app",
-  "createUpdaterArtifacts": true
-}
-```
-
-### Homebrew 配置（单独确认）
-
-**展示默认配置：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Homebrew 分发配置                                  │
-├─────────────────────────────────────────────────────┤
-│  Tap 仓库: https://github.com/xxx/homebrew-xxx  │
-│  GitHub Actions 自动发布: Yes                       │
-└─────────────────────────────────────────────────────┘
-
-输入 y 配置，输入 n 跳过：
-> _
-```
-
-### 图标配置（单独确认）
-
-**展示默认配置：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  图标配置                                            │
-├─────────────────────────────────────────────────────┤
-│  源图标: src-tauri/icons/icon.png (1024x1024)     │
-│  自定义 DMG 背景: No                               │
-└─────────────────────────────────────────────────────┘
-
-输入 y 修改，输入 n 跳过：
-> _
-```
-
-**图标生成命令（初始化后执行）：**
-```bash
-cd src-tauri/icons
-npx tauri icon icon.png
-```
-
-### 主题配置（单独确认）
-
-**展示默认配置：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  主题配置                                            │
-├─────────────────────────────────────────────────────┤
-│  深色模式: Yes                                       │
-│  浅色模式: Yes                                       │
-│  跟随系统: Yes                                       │
-└─────────────────────────────────────────────────────┘
-
-输入 y 修改，输入 n 跳过：
-> _
-```
-
----
-
-## 后续补充配置
-
-当用户需要添加新功能时，一次只问一个问题。
-
-### 添加新功能模块
-
-**询问：**
-
-```
-请输入要添加的模块名称：
-
-可用模块：
-- database (数据库)
-- network (网络请求)
-- logging (日志系统)
-- tray (系统托盘)
-- autostart (自动启动)
-- notification (通知)
-- deep-link (深链接)
-- updater (自动更新)
-- fs (文件系统)
-- dialog (对话框)
-- process (进程管理)
-
-> _
-```
-
-**用户输入后，确认：**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  添加模块确认                                        │
-├─────────────────────────────────────────────────────┤
-│  模块: database (SQLite)                            │
-│  依赖: rusqlite                                    │
-└─────────────────────────────────────────────────────┘
-
-输入 y 确认添加，输入 n 取消：
-> _
-```
-
-### 补充打包配置
-
-**询问：**
-
-```
-请输入要添加的打包方式：
-
-可用方式：
-- homebrew (Homebrew Tap)
-- dmg (macOS DMG)
-- msi (Windows MSI)
-- nsis (Windows NSIS)
-- appimage (Linux AppImage)
-- deb (Linux DEB)
-
-> _
-```
-
-### 更新主题
-
-**询问：**
-
-```
-请选择要修改的主题配置：
-
-1. 添加新 DaisyUI 主题
-2. 修改主题颜色
-3. 切换深色/浅色模式
-
-> _
-```
-
----
-
-## 开发命令
+基础依赖：
 
 ```bash
-# 安装依赖
-npm install
+npm install clsx tailwind-merge
+npm install -D "tailwindcss@^4" "@tailwindcss/vite@^4" "daisyui@^5.5.14" typescript
+```
 
-# 开发模式 (显示 Rust tracing 日志)
-npm run tauri dev
+默认模板使用 Tailwind v4 的 `@tailwindcss/vite` 插件和 DaisyUI v5 的 CSS `@plugin` 集成方式。不要复制 `tailwind.config.cjs` 或 `postcss.config.cjs`，否则会把项目混回 Tailwind v3 配置模型。
 
-# 生产构建
-npm run tauri build
+旧版兼容依赖仅在用户明确要求时使用：
 
-# 仅前端构建
-npm run build
+```bash
+npm install clsx tailwind-merge "daisyui@^4.12.24"
+npm install -D "tailwindcss@^3.4.19" postcss autoprefixer typescript
+```
 
-# 类型检查
+按用户选择追加：
+
+```bash
+npm install i18next react-i18next
+npm install date-fns
+npm install zustand
+npm install lucide-react
+npm install @tauri-apps/plugin-updater @tauri-apps/plugin-dialog @tauri-apps/plugin-fs @tauri-apps/plugin-process @tauri-apps/plugin-notification
+```
+
+Rust 侧依赖参考 `templates/tauri/cargo-dependencies.toml`，只添加用户选择的插件和功能，避免把所有可选依赖一次性塞进 `Cargo.toml`。
+
+## 模板索引
+
+基础模板：
+
+- `templates/package/scripts.json`：推荐 `package.json` scripts，包含 typecheck、build、tauri、package、sync-version。
+- `templates/config/vite.config.ts`：Tailwind v4 的 Vite 插件配置，合并到官方 CLI 生成的 `vite.config.ts`。
+- `templates/frontend/App.tsx`：使用 DaisyUI 组件类的默认首页，替换官方 CLI 的裸样式示例页。
+- `templates/frontend/index.css`：Tailwind v4 + DaisyUI v5 入口和 `appLight/appDark` 主题。
+- `templates/scripts/sync-version.js`：把 `package.json` 版本同步到 `tauri.conf.json` 和 `Cargo.toml`。
+- `templates/tauri/tauri.conf.base.json`：基础 Tauri 配置参考。
+
+旧版兼容模板：
+
+- `templates/legacy-tailwind3/config/tailwind.config.cjs`：Tailwind v3 + DaisyUI v4 主题配置。
+- `templates/legacy-tailwind3/config/postcss.config.cjs`：PostCSS + Autoprefixer 配置。
+- `templates/legacy-tailwind3/frontend/index.css`：Tailwind v3 入口和主题 CSS 变量。
+
+前端能力模板：
+
+- `templates/frontend/i18n/index.ts`：i18next 初始化。
+- `templates/frontend/locales/en.json`：英文文案。
+- `templates/frontend/locales/zh-CN.json`：中文文案。
+- `templates/frontend/utils/theme.ts`：浅色、深色、跟随系统主题。
+- `templates/frontend/utils/cn.ts`：clsx + tailwind-merge 工具。
+- `templates/frontend/stores/useAppStore.ts`：zustand 基础 store。
+
+Tauri 和发布模板：
+
+- `templates/tauri/tauri.conf.bundle-fragment.json`：bundle targets、描述、updater artifacts 开关。
+- `templates/tauri/tauri.conf.updater-fragment.json`：自动更新配置片段。
+- `templates/tauri/cargo-dependencies.toml`：常用 Rust/Tauri 依赖清单。
+- `templates/github/build.yml`：GitHub Actions 构建矩阵。
+- `templates/github/release.yml`：GitHub tag release 工作流。
+
+## 模板落盘规则
+
+按目标路径复制模板：
+
+- `templates/config/vite.config.ts` → 合并到 `vite.config.ts`，保留 Tauri 的 `server`、`hmr`、`watch` 配置，并加入 `@tailwindcss/vite`
+- `templates/frontend/App.tsx` → `src/App.tsx`
+- `templates/frontend/index.css` → `src/index.css`
+- `templates/scripts/sync-version.js` → `scripts/sync-version.js`
+- `templates/frontend/i18n/index.ts` → `src/i18n/index.ts`
+- `templates/frontend/locales/*.json` → `src/locales/`
+- `templates/frontend/utils/*.ts` → `src/utils/`
+- `templates/frontend/stores/useAppStore.ts` → `src/stores/useAppStore.ts`
+- `templates/github/build.yml` → `.github/workflows/build.yml`
+- `templates/github/release.yml` → `.github/workflows/release.yml`
+
+合并型模板不要直接覆盖用户文件：
+
+- `templates/config/vite.config.ts`：合并到官方 CLI 的 `vite.config.ts`，重点是添加 `import tailwindcss from "@tailwindcss/vite";` 和 `plugins: [react(), tailwindcss()]`。
+- `templates/package/scripts.json`：合并到现有 `package.json.scripts`。
+- `templates/tauri/tauri.conf.base.json`：用于初始化或对照修改 `src-tauri/tauri.conf.json`。
+- `templates/tauri/tauri.conf.bundle-fragment.json`：合并到 `src-tauri/tauri.conf.json.bundle`。
+- `templates/tauri/tauri.conf.updater-fragment.json`：合并到 `src-tauri/tauri.conf.json`，并替换 pubkey/endpoints。
+- `templates/tauri/cargo-dependencies.toml`：按需合并到 `src-tauri/Cargo.toml`。
+
+旧版兼容落盘规则：
+
+- 只有用户明确要求 Tailwind v3、DaisyUI v4、PostCSS、Autoprefixer 或旧版兼容时，才复制 `templates/legacy-tailwind3/config/tailwind.config.cjs` → `tailwind.config.cjs`。
+- 只有旧版兼容模式才复制 `templates/legacy-tailwind3/config/postcss.config.cjs` → `postcss.config.cjs`。
+- 旧版兼容模式使用 `templates/legacy-tailwind3/frontend/index.css` → `src/index.css`。
+- 最新默认模式不得创建 `tailwind.config.cjs` 或 `postcss.config.cjs`。
+
+## 必要接线
+
+应用基础模板后，确认：
+
+- `src/main.tsx` 引入 `./index.css`。
+- 默认最新版模板下，`vite.config.ts` 已启用 `@tailwindcss/vite`。
+- 默认最新版模板下，项目根目录没有 `tailwind.config.cjs` 和 `postcss.config.cjs`。
+- 默认首页必须使用 DaisyUI/Tailwind 组件类，例如 `btn`、`input`、`card`、`navbar`，不要保留官方 CLI 的 `App.css` 裸样式示例。
+- 选择国际化时，`src/main.tsx` 引入 `./i18n`。
+- 选择主题时，在应用启动时调用 `applyTheme(getSavedTheme())`，或通过 zustand store 统一处理。
+- 选择 updater 时，Rust `tauri::Builder` 注册 `tauri_plugin_updater::Builder::new().build()`。
+- 选择 dialog/fs/process/notification 时，同时配置 Rust 插件、前端依赖和 `src-tauri/capabilities/default.json` 权限。
+
+## 打包和 CI
+
+本地打包：
+
+```bash
+npm run package:app
+npm run package
+```
+
+本地冒烟测试优先运行 `npm run package:app`，它只验证 `.app` 目标，能避开部分沙箱、无 GUI、磁盘镜像挂载受限环境里的 DMG 失败。完整安装包和 DMG 用 `npm run package` 或 GitHub Actions 验证。
+
+GitHub Workflows：
+
+- 选择能力 14 时复制 `templates/github/build.yml` 和 `templates/github/release.yml`。
+- 开启自动更新签名时，在仓库 Secrets 配置 `TAURI_SIGNING_PRIVATE_KEY` 和 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。
+- release workflow 默认通过 `v*` tag 触发，并校验 tag 与 `package.json.version` 一致。
+
+## 验证命令
+
+每次初始化或添加能力后执行：
+
+```bash
 npm run typecheck
+npm run build
 ```
 
----
-
-## 前置条件
-
-1. **Rust**
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-
-2. **Node.js 18+**
-   ```bash
-   # macOS
-   brew install node
-   
-   # Windows
-   winget install OpenJS.NodeJS
-   ```
-
-3. **Tauri CLI v2**
-   ```bash
-   npm install -g @tauri-apps/cli@latest
-   cargo install tauri-cli --version "^2.0"
-   ```
-
-4. **平台依赖**
-   - **macOS**: Xcode Command Line Tools
-   - **Windows**: Visual Studio Build Tools
-   - **Linux**: `libwebkit2gtk-4.1-dev libssl-dev libgtk-3-dev`
-
----
-
-## 初始化检查清单
-
-### 基础
-- [ ] 项目名称和应用标识符已设置
-- [ ] 项目结构已创建
-- [ ] 基础 Cargo.toml 已配置
-- [ ] 基础 tauri.conf.json 已配置
-
-### 功能模块（按需）
-- [ ] 数据库模块 (如选择)
-- [ ] 网络请求模块 (如选择)
-- [ ] 日志系统 (如选择)
-  - [ ] tracing-subscriber 配置
-  - [ ] 日志回显到终端
-  - [ ] RUST_LOG 环境变量支持
-- [ ] 系统托盘 (如选择)
-- [ ] 自动启动 (如选择)
-- [ ] 单例模式 (如选择)
-- [ ] 深链接 (如选择)
-- [ ] 自动更新 (如选择)
-
-### 前端（按需）
-- [ ] React 基础配置
-- [ ] Tailwind + DaisyUI (如选择)
-- [ ] 国际化 (如选择)
-- [ ] 状态管理 (如选择)
-
-### 打包（按需）
-- [ ] 打包 targets 配置
-- [ ] 应用图标生成
-- [ ] Homebrew Formula (如选择)
-- [ ] DMG 背景 (如选择)
-
----
-
-## 日志与调试
-
-### Tracing 日志宏
-
-```rust
-use tracing::{info, warn, error, debug, trace};
-
-fn example() {
-    trace!("Trace level: {:?}", detailed_data);
-    debug!("Debug level: {:?}", data);
-    info!("Info level: operation started");
-    warn!("Warning: something might be wrong");
-    error!("Error: operation failed");
-}
-```
-
-### 日志级别环境变量
+桌面冒烟：
 
 ```bash
-# 设置日志级别
-RUST_LOG=debug cargo run -p my-app-cli -- status
-
-# 常用级别
-RUST_LOG=trace   # 最详细
-RUST_LOG=debug   # 调试信息
-RUST_LOG=info    # 一般信息 (默认)
-RUST_LOG=warn    # 警告
-RUST_LOG=error   # 仅错误
-RUST_LOG=off     # 关闭日志
+npm run tauri:dev
+npm run package:app
 ```
 
-### Tauri 开发模式日志
+## 参考文档
 
-运行 `npm run tauri dev` 时，tracing 日志会自动回显到终端：
-
-```bash
-npm run tauri dev
-```
-
-**输出示例：**
-```
-[tauri] running on http://localhost:1420
-[2024-01-01T12:00:00Z INFO  my_app::commands] Command 'get_data' called
-[2024-01-01T12:00:00Z DEBUG my_app::modules] Processing request with id: abc123
-[2024-01-01T12:00:00Z WARN  my_app::modules] Cache miss for key: user_settings
-[2024-01-01T12:00:00Z ERROR my_app::modules] Failed to connect to database
-```
-
-### 前端日志面板（可选）
-
-如果需要在应用内查看日志，可添加日志面板组件：
-
-```tsx
-// src/components/LogPanel.tsx
-import { useEffect, useState } from 'react';
-
-interface LogEntry {
-  level: 'trace' | 'debug' | 'info' | 'warn' | 'error';
-  time: string;
-  target: string;
-  message: string;
-}
-
-export function LogPanel() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-
-  // 通过 Tauri 事件监听日志
-  useEffect(() => {
-    const unlisten = listen<LogEntry>('rust-log', (event) => {
-      setLogs(prev => [...prev.slice(-100), event.payload]);
-    });
-    return () => { unlisten.then(fn => fn()); };
-  }, []);
-
-  const levelColors = {
-    trace: 'text-gray-400',
-    debug: 'text-gray-500',
-    info: 'text-blue-400',
-    warn: 'text-yellow-400',
-    error: 'text-red-400',
-  };
-
-  return (
-    <div className="bg-base-300 rounded-lg p-4 font-mono text-sm">
-      {logs.map((log, i) => (
-        <div key={i} className={`${levelColors[log.level]} mb-1`}>
-          <span className="text-gray-500">[{log.time}]</span>
-          <span className="text-primary">[{log.level.toUpperCase()}]</span>
-          <span className="text-secondary">[{log.target}]</span>
-          <span className="ml-2">{log.message}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-## 常见问题
-
-**macOS "应用已损坏"**
-```bash
-sudo xattr -rd com.apple.quarantine "/Applications/YourApp.app"
-```
-
-**Tauri 编译失败**
-```bash
-cargo clean && rm -rf src-tauri/target && npm run tauri build
-```
-
-**Homebrew 安装失败**
-```bash
-brew install --cask --no-quarantine your-app-name
-```
+- `references/frontend-stack.md`：前端依赖和能力说明。
+- `references/tauri-v2-template.md`：Tauri 配置、打包发布和 GitHub Workflows 说明。
+- `references/rust-modules.md`：Rust 模块划分和 commands 调用规范。

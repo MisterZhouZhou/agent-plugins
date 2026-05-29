@@ -1,0 +1,6 @@
+interface:
+  display_name: "Three.js Skill"
+  short_description: "three.js 3D 开发、调试与性能优化助手"
+  default_prompt: "使用 $threejs-skill 帮我实现一个符合当前项目约定的 Three.js 功能。"
+policy:
+  allow_implicit_invocation: true

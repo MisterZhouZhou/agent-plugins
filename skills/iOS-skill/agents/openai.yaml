@@ -1,0 +1,6 @@
+interface:
+  display_name: "iOS Skill"
+  short_description: "iOS Swift 开发、调试与发布助手"
+  default_prompt: "使用 $iOS-skill 帮我实现一个符合当前项目约定的 iOS 功能。"
+policy:
+  allow_implicit_invocation: true

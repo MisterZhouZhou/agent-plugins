@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app", "msi", "nsis", "deb", "appimage"],
+    "category": "DeveloperTool",
+    "shortDescription": "A desktop app built with Tauri",
+    "longDescription": "A desktop app built with Tauri, React, and TypeScript.",
+    "createUpdaterArtifacts": false
+  }
+}

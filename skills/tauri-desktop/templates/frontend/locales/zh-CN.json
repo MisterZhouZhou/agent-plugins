@@ -1,0 +1,12 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "switchTheme": "切换主题"
+  },
+  "app": {
+    "title": "我的应用",
+    "welcome": "欢迎使用 {{name}}"
+  }
+}

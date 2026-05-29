@@ -1,0 +1,12 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "switchTheme": "Switch theme"
+  },
+  "app": {
+    "title": "My App",
+    "welcome": "Welcome to {{name}}"
+  }
+}

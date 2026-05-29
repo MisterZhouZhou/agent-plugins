@@ -1,0 +1,35 @@
+{
+  "skill_name": "threejs-skill",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "使用 $threejs-skill 帮我在一个无构建器的静态 HTML 页面里创建 three.js demo：需要 importmap、OrbitControls、一个带阴影的 PBR 物体、resize 适配和资源清理。",
+      "expected_output": "产出可运行的静态 demo，使用 three/addons canonical import，包含 WebGLRenderer、PerspectiveCamera、OrbitControls、MeshStandardMaterial、DirectionalLight 阴影、resize 处理、setAnimationLoop 和 dispose 清理。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "使用 $threejs-skill 排查 three.js 页面颜色发灰、PBR 材质金属感不对的问题，给出应该检查的 renderer、texture、material 设置。",
+      "expected_output": "回答应先分流到 renderers/textures/materials，检查 outputColorSpace、toneMapping、albedo/baseColor 的 sRGB、normal/roughness/metalness 数据贴图不要设置为颜色贴图，并说明环境贴图/PMREM 与曝光的影响。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "使用 $threejs-skill 给我的场景加 Raycaster 拾取：点击物体时高亮，注意 canvas 不铺满整个窗口、设备像素比可能很高。",
+      "expected_output": "回答应引用 objects/math 主题，正确用 canvas boundingClientRect 计算 NDC，调用 raycaster.setFromCamera，递归 intersectObjects，处理 layers 或可交互列表，并说明 hover/click 状态和材质还原。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "使用 $threejs-skill 帮我修复 Vite 项目里 OrbitControls 找不到模块的问题，并说明 three/addons 与 examples/jsm 的关系。",
+      "expected_output": "回答应先进入 dev-setup 主题，检查 three 依赖版本、重复安装、canonical import `three/addons/controls/OrbitControls.js`，避免直接从 node_modules 深路径导入，并给出最小验证代码。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "使用 $threejs-skill 优化一个模型展示页：移动端帧率低，阴影开销大，切换模型后内存上涨。",
+      "expected_output": "回答应覆盖 renderer DPR 限制、阴影灯数量和 shadow map 尺寸、postprocessing pass 成本、renderer.info 观察、模型/材质/纹理/渲染目标 dispose、事件和 controls 清理，以及按现有项目命令验证。",
+      "files": []
+    }
+  ]
+}
