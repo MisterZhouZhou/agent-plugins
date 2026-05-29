@@ -1,0 +1,7 @@
+interface:
+  display_name: "Chart Skill"
+  short_description: "uni-app 图表、ECharts/lime-echart 与 uCharts 开发助手"
+  default_prompt: "使用 $chart-skill 帮我实现一个符合当前项目约定的图表功能。"
+policy:
+  allow_implicit_invocation: true
+
