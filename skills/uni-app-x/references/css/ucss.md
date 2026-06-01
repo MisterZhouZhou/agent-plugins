@@ -17,9 +17,47 @@ description: uvue 样式、flex 布局、样式不继承、选择器与优先级
 
 ## 页面级滚动
 
-- **App 端**：页面本身不滚动，需在需要滚动的区域使用 **scroll-view**（或 list-view）；整页滚动可在根节点包一层 `scroll-view`，并设 `style="flex:1"` 铺满。
+- **App 端**：页面本身不滚动，需在需要滚动的区域使用 **scroll-view**（或 list-view）。
+- HarmonyOS/App 真机上做整页滚动时，优先使用“页面根容器 `height: 100%` + `flex: 1` + `flex-direction: column`，滚动区域 `scroll-view` 设置 `direction="vertical"` + `flex: 1`”的结构；仅给内容容器或仅给 scroll-view 设置高度通常不可靠。
+- 固定底部导航、弹窗、浮层等不要放进整页滚动的 `scroll-view`；滚动内容需要避开固定底栏时，在 scroll-view 内部增加固定高度的底部 spacer。
 - 若根节点是 scroll-view，则 onPageScroll、onReachBottom、uni.pageScrollTo 等才在 App 端生效；根节点为 list-view 时用 list-view 自带滚动 API。
 - Web/小程序有页面滚动，可按需用条件编译在 App 端包 scroll-view。
+
+推荐结构：
+
+```vue
+<template>
+  <view class="page">
+    <scroll-view class="page-scroll" direction="vertical">
+      <view class="page-content"></view>
+      <view class="page-bottom-space"></view>
+    </scroll-view>
+    <view class="fixed-bottom"></view>
+  </view>
+</template>
+
+<style>
+.page {
+  height: 100%;
+  flex: 1;
+  flex-direction: column;
+}
+.page-scroll {
+  flex: 1;
+}
+.page-bottom-space {
+  height: 180rpx;
+}
+.fixed-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+</style>
+```
+
+不要使用 `100vh`、`calc(...)`、`env(safe-area-inset-bottom)`、`constant(safe-area-inset-bottom)` 来处理 App/HarmonyOS 页面高度或安全区；App-UVue CSS 编译器可能直接报错。改用 `height: 100%`、`flex: 1`、固定 `rpx` 留白或平台 API 获取安全区后绑定内联数值。
 
 ## 样式不继承
 
@@ -35,12 +73,14 @@ description: uvue 样式、flex 布局、样式不继承、选择器与优先级
 ## 层级与方法
 
 - App 仅对**同层兄弟节点**支持 **z-index** 调节层级，不支持脱离 DOM 树任意层级。
-- 支持的 CSS 方法：url()、rgb()、rgba()、var()、env() 等，详见官方「css 方法」文档。
+- 支持的 CSS 方法以目标平台编译器为准；App/HarmonyOS 页面样式中不要假设 `env()`、`constant()`、`calc()` 可用于尺寸。
 
 ## 关键点
 
-- 布局以 flex 为主；根节点用 scroll-view 实现整页滚动并设 flex:1。
+- 布局以 flex 为主；整页滚动使用“根容器 flex:1 + scroll-view flex:1”。
 - 文字颜色、字号等一律写在 `<text>` 上；容器用 view，不依赖继承。
+- App-UVue/HarmonyOS 只使用 class 选择器；不要写 `.parent text`、`.parent .child`、`:last-child` 等 Web 选择器。
+- App-UVue/HarmonyOS 常见不兼容写法：`100vh`、`calc()`、`env()`、`constant()`、`position: sticky`、`display: block`、`font-weight: 500/600`、`text-transform`、`transition` 简写、`pointer-events`。优先使用 `height: 100%`、`flex: 1`、`position: fixed/relative/absolute`、`display: flex/none`、`font-weight: normal/bold/400/700`。
 - 跨端时注意 Web 与 App 在滚动、scoped、默认 flex 方向上的差异。
 
 <!--

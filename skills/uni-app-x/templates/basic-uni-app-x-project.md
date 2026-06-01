@@ -82,7 +82,7 @@ const handleClick = (): void => {
 
 .title {
   font-size: 36rpx;
-  font-weight: 600;
+  font-weight: bold;
   color: #111111;
 }
 

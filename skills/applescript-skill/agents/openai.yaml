@@ -1,0 +1,7 @@
+interface:
+  display_name: "AppleScript"
+  short_description: "Safe macOS AppleScript and JXA automation"
+  default_prompt: "Use $applescript to automate a macOS app safely with AppleScript or JXA."
+
+policy:
+  allow_implicit_invocation: true

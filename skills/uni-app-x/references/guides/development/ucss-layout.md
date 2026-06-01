@@ -17,7 +17,40 @@ uni-app x App rendering implements a subset of web CSS. Code that works in Web m
 4. Class names may contain only `A-Z`, `a-z`, `0-9`, `_`, and `-`.
 5. Use `rpx` for responsive sizing: `750rpx` equals screen width.
 6. Text styles (color, font-size, etc.) must be written on `<text>` elements, not parent containers.
-7. Pages do not scroll by default. Wrap scrollable content in `<scroll-view>`.
+7. Pages do not scroll by default on App/HarmonyOS. Wrap scrollable content in `<scroll-view>`.
+8. Use only class selectors in App-UVue CSS. Avoid descendant selectors such as `.parent text`, `.parent .child`, and pseudo selectors such as `:last-child`.
+9. Avoid App/HarmonyOS-incompatible web CSS: `100vh`, `calc(...)`, `env(...)`, `constant(...)`, `position: sticky`, `display: block`, `font-weight: 500/600`, `text-transform`, `transition` shorthand, and `pointer-events`.
+10. For full-page vertical scrolling, use a flex parent plus a flex scroll-view:
+
+```vue
+<view class="page">
+  <scroll-view class="page-scroll" direction="vertical">
+    <view class="page-content"></view>
+    <view class="page-bottom-space"></view>
+  </scroll-view>
+  <view class="fixed-bottom"></view>
+</view>
+```
+
+```css
+.page {
+  height: 100%;
+  flex: 1;
+  flex-direction: column;
+}
+.page-scroll {
+  flex: 1;
+}
+.page-bottom-space {
+  height: 180rpx;
+}
+.fixed-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+```
 
 ## Supported property subset
 
@@ -33,7 +66,6 @@ flex: 1;
 position: relative;
 position: absolute;
 position: fixed;
-position: sticky;
 
 /* Box model */
 width: 750rpx;
@@ -57,7 +89,7 @@ overflow: hidden;
 
 /* Text */
 font-size: 28rpx;
-font-weight: 600;
+font-weight: bold;
 font-family: sans-serif;
 font-style: normal;
 text-align: center;

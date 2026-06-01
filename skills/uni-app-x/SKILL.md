@@ -69,6 +69,7 @@ Choose the smallest relevant reference file before editing code:
    - Load `references/api/device.md` for system info and network status APIs.
    - Load `references/api/components-api.md` when selecting built-in components such as `list-view`, `scroll-view`, `swiper`, `image`, `video`, or form controls.
    - Load `references/components/built-in/<component>.md` for detailed component attributes, events, and platform compatibility.
+   - For horizontal `scroll-view` issues, load `references/components/built-in/scroll-view.md` and prefer the App/HarmonyOS pattern there: `direction="horizontal"`, `flex-direction: row`, direct fixed-width child cells, and spacing embedded in child cell width.
    - Load `references/features/navigation.md` for navigation usage patterns, URL params, props passing, and tabBar constraints.
    - Load `references/features/storage.md` for storage App vs H5 differences and sync/async usage.
    - Load `references/features/api-request.md` for request data handling with UTSJSONObject/type generics, streaming, and App limitations.
@@ -128,6 +129,7 @@ Choose the smallest relevant reference file before editing code:
 - Use `rpx` for responsive sizing and explicit fixed units only when a fixed physical size is intentional.
 - Test target platforms separately because Android, iOS, HarmonyOS, Web, and Mini Programs do not share identical runtime behavior.
 - Use `list-view` for large lists instead of rendering long `v-for` lists inside `scroll-view`.
+- For uni-app x horizontal `scroll-view`, prefer `direction="horizontal"` over old `scroll-x`; set explicit width/height and `flex-direction: row` on the scroll-view; make fixed-width scroll items direct children; avoid relying on wrapper views, `inline-block`, `white-space`, trailing `margin-right`, or empty trailing spacer nodes for App/HarmonyOS horizontal measurement.
 - When answering from this skill's bundled documentation, always append a short "文档引用" section listing the specific reference/template files and line numbers used, such as `references/core/lifecycle.md:23` or `references/core/lifecycle.md:34-37`. Check line numbers with `nl -ba`, `rg -n`, or an equivalent source view. Cite only the lines actually used as evidence. Do not cite `SKILL.md` in "文档引用"; it is an instruction/index file, not supporting product documentation. If no bundled reference/template document was needed, say so explicitly instead of inventing citations.
 
 ## References and templates

@@ -87,6 +87,9 @@ description: uni-app x 页面文件、构成、pages.json 与页面实例
 
 - Web 和 WebView 小程序页面通常默认可滚动；uni-app x 原生页面的默认滚动能力取决于平台和渲染模式。
 - vdom 模式 App 平台出于性能考虑，默认不隐式给页面套 `scroll-view`；需要滚动时应显式使用 `scroll-view`、`list-view`、`waterflow` 等滚动容器。
+- HarmonyOS/App 真机上不要依赖 Web 页面滚动习惯；整页纵向滚动优先使用“根容器 `height: 100%` + `flex: 1` + `flex-direction: column`，内部 `scroll-view direction="vertical"` + `flex: 1`”。
+- 固定底部导航、弹窗、浮层放在整页 `scroll-view` 外；需要避让固定底栏时，在 `scroll-view` 内加固定高度底部 spacer。
+- 不要用 `100vh`、`calc(...)`、`env(...)`、`constant(...)` 处理 App/HarmonyOS 页面高度或安全区；这些写法可能被 App-UVue CSS 编译器拒绝。
 - 蒸汽模式从 5.11 起，App 平台在符合条件时会由编译器自动套一层 `scroll-view`，页面默认可滚动。
 - 以下情况蒸汽模式不会自动套 `scroll-view`：
   - 页面 `style` 配置了 `disableScroll: true`。

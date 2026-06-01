@@ -6,7 +6,92 @@
 
 需注意在webview渲染的页面中，区域滚动的性能不及页面滚动。
 
-使用竖向滚动时，需要给 <scroll-view> 一个固定高度，通过 css 设置 height；使用横向滚动时，需要给 <scroll-view> 添加 white-space: nowrap; 样式。
+使用竖向区域滚动时，需要让 `<scroll-view>` 获得明确可计算的高度；可以通过固定 `height`，也可以在整页布局中通过父容器 `flex: 1` + scroll-view `flex: 1` 获得高度。使用横向滚动时，优先使用 `direction="horizontal"`，并给 `<scroll-view>` 添加横向布局相关样式。
+
+HarmonyOS/App 横向滚动推荐结构：
+
+```vue
+<template>
+  <scroll-view class="tabs-scroll" direction="horizontal" show-scrollbar="false">
+    <view class="tabs-leading-space"></view>
+    <view class="tab-cell" v-for="item in tabs" :key="item.id" @click="selectTab(item.id)">
+      <view class="tab-pill" :class="{ 'tab-pill--active': currentTab === item.id }">
+        <text class="tab-pill__text">{{ item.name }}</text>
+      </view>
+    </view>
+  </scroll-view>
+</template>
+
+<style>
+.tabs-scroll {
+  width: 100%;
+  height: 104rpx;
+  flex-direction: row;
+  padding: 16rpx 0;
+}
+.tabs-leading-space {
+  width: 16rpx;
+  height: 72rpx;
+}
+.tab-cell {
+  width: 204rpx;
+  height: 72rpx;
+  flex-direction: row;
+}
+.tab-pill {
+  width: 188rpx;
+  height: 72rpx;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32rpx;
+}
+</style>
+```
+
+横向滚动排查要点：
+
+- uni-app x 新项目优先使用 `direction="horizontal"` / `direction="vertical"`，不要用旧的 `scroll-x` / `scroll-y` 作为首选写法。
+- `scroll-view` 自身要有可计算的宽高，横向滚动时至少设置 `width: 100%`、明确 `height`、`flex-direction: row`。
+- 滚动项尽量作为横向 `scroll-view` 的直接子节点；中间再包一层 `tabs-inner` 可能导致 App/HarmonyOS 原生端只测到一屏宽，无法形成横向可滚动内容。
+- 每个滚动项要有明确宽度，总宽度必须超过 `scroll-view` 宽度；不要依赖 Web 的 `inline-block`、`white-space` 或自动内容宽度撑开。
+- 末尾留白不要只依赖最后一个子项的 `margin-right` 或尾部空 `view`，部分原生端可能不把它稳定计入滚动内容宽度。更稳的做法是用固定宽度的外层 cell 承载间距，例如 `tab-cell` 宽 `204rpx`、内部可见按钮宽 `188rpx`。
+
+HarmonyOS/App 整页纵向滚动推荐结构：
+
+```vue
+<template>
+  <view class="page">
+    <scroll-view class="page-scroll" direction="vertical">
+      <view class="page-content"></view>
+      <view class="page-bottom-space"></view>
+    </scroll-view>
+    <view class="fixed-bottom"></view>
+  </view>
+</template>
+
+<style>
+.page {
+  height: 100%;
+  flex: 1;
+  flex-direction: column;
+}
+.page-scroll {
+  flex: 1;
+}
+.page-bottom-space {
+  height: 180rpx;
+}
+.fixed-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+</style>
+```
+
+固定底栏、弹窗、浮层应放在整页 `scroll-view` 外；滚动内容需要避让固定底栏时，在 `scroll-view` 内增加底部 spacer。不要用 `100vh`、`calc(...)`、`env(...)`、`constant(...)` 处理 App/HarmonyOS 页面滚动高度。
 
 ### Syntax
 
@@ -17,6 +102,7 @@
 
 | 属性名 | 类型 | 默认值 | 说明 | 平台差异说明 |
 | --- | --- | --- | --- | --- |
+| direction | String | vertical | 滚动方向，可选 `vertical`、`horizontal`、`none` | App/HarmonyOS 横向滚动优先使用此属性 |
 | scroll-x | Boolean | false | 允许横向滚动 |  |
 | scroll-y | Boolean | false | 允许纵向滚动 |  |
 | upper-threshold | Number/String | 50 | 距顶部/左边多远时（单位px），触发 scrolltoupper 事件 |  |

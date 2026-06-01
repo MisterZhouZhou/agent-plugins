@@ -12,7 +12,7 @@ Do not use the `edge-tts` Python package for SSML phoneme work — it treats raw
 ## Workflow
 
 1. Prepare narration text with optional inline markup (see below).
-2. Mark forced pronunciations if needed:
+2. Mark forced pronunciations if needed. For known polyphonic words, prefer explicit phoneme markers:
 
 ```text
 第一{{phoneme:nan 4|难}}，金蝉遭贬。
@@ -39,6 +39,58 @@ ls -lh static/voice/001.mp3
 
 ---
 
+## Chinese Polyphones And Tone Control
+
+Use `{{phoneme:...|...}}` for Chinese polyphonic characters when Azure's default reading is ambiguous. The bundled scripts render this marker as:
+
+```xml
+<phoneme alphabet="sapi" ph="nan 4">难</phoneme>
+```
+
+Known-good pattern:
+
+```bash
+node .codex/skills/azure-ssml-tts/scripts/generate-speech.mjs \
+  --out static/voice/example.mp3 \
+  --voice zh-CN-XiaoyiNeural \
+  --rate -6% \
+  --text "第一{{phoneme:nan 4|难}}，金蝉遭贬。"
+```
+
+For Journey to the West trial narration, use `generate-trial-audios.mjs`; it uses the same Azure REST + SAPI phoneme rendering as `generate-speech.mjs` and keeps `难` pinned with `{{phoneme:nan 4|难}}` in ordinal phrases.
+
+Practical rules:
+
+- Keep confirmed polyphone overrides explicit, e.g. `{{phoneme:nan 4|难}}`; do not rely on semantic context when exact pronunciation matters.
+- Verify generated audio by listening, especially for isolated Chinese characters. A request can succeed while the perceptual tone is still wrong.
+- Do not assume every Pinyin syllable works equally well in `zh-CN` SAPI phoneme mode. Example from this project: `{{phoneme:wo 3|我}}` with `zh-CN-XiaoyiNeural` generated successfully but sounded like a rising tone, so it was not acceptable for teaching third tone.
+- If a `zh-CN` phoneme marker sounds wrong, generate candidates instead of repeatedly overwriting the final asset:
+
+```bash
+node .codex/skills/azure-ssml-tts/scripts/generate-speech.mjs \
+  --out /tmp/wo-plain-xiaoyi.mp3 \
+  --voice zh-CN-XiaoyiNeural \
+  --rate -25% \
+  --text "我"
+
+node .codex/skills/azure-ssml-tts/scripts/generate-speech.mjs \
+  --out /tmp/wo-phoneme-xiaoyi.mp3 \
+  --voice zh-CN-XiaoyiNeural \
+  --rate -25% \
+  --text "{{phoneme:wo 3|我}}"
+
+node .codex/skills/azure-ssml-tts/scripts/generate-speech.mjs \
+  --out /tmp/wo-tw-hsiaochen.mp3 \
+  --voice zh-TW-HsiaoChenNeural \
+  --rate -20% \
+  --text "我"
+```
+
+- For single-character learning audio, choose the candidate that sounds correct after human review, then copy it to the app asset path such as `static/audio/chars/我.mp3`.
+- If neither `zh-CN` phoneme nor regional voice candidates sound correct, stop and ask for a recorded reference or use a professionally recorded asset. Do not claim SSML guarantees correctness for every Mandarin tone.
+
+---
+
 ## Quick-Pick Voices
 
 ### Chinese 中文
@@ -55,6 +107,8 @@ ls -lh static/voice/001.mp3
 | `zh-CN-YunzeNeural` | 云泽 — 男声·深沉，磁性旁白 |
 
 完整中文音色列表：`zh-CN-XiaochenNeural` / `zh-CN-XiaomengNeural` / `zh-CN-XiaomoNeural` / `zh-CN-XiaoqiuNeural` / `zh-CN-XiaoshuangNeural` / `zh-CN-XiaoxuanNeural` / `zh-CN-XiaoyanNeural` / `zh-CN-XiaoyouNeural` / `zh-CN-XiaozhenNeural` / `zh-CN-YunfengNeural` / `zh-CN-YunhaoNeural` / `zh-CN-YunxiaNeural` / `zh-CN-YunyeNeural`
+
+Useful regional Mandarin candidates for tone-sensitive single characters: `zh-TW-HsiaoChenNeural` / `zh-TW-HsiaoYuNeural` / `zh-TW-YunJheNeural`. Use these as candidates only after listening, because accent and app consistency may differ from `zh-CN` voices.
 
 ### English
 
@@ -190,5 +244,5 @@ More UK voices: `en-GB-LibbyNeural` / `en-GB-MaisieNeural`(child)
 - The script writes MP3 by default using `audio-24khz-48kbitrate-mono-mp3`.
 - It fetches an endpoint token at runtime and does not persist access tokens.
 - Keep generated app audio under `static/voice/NNN.mp3`.
-- For Journey to the West trial titles, prefer explicit phoneme markers over semantic substitutions.
+- For Journey to the West trial titles, prefer explicit phoneme markers over semantic substitutions; keep `难` pinned as `{{phoneme:nan 4|难}}`.
 - For more complex needs (phoneme, lang, audio embed, custom lexicon), use raw SSML mode.

@@ -25,7 +25,7 @@ onLoad((options) => {
 
 .title {
   font-size: 32rpx;
-  font-weight: 600;
+  font-weight: bold;
   color: #111111;
 }
 </style>
