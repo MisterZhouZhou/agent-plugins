@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Workflows"
+  short_description: "快速生成可用的 GitHub Actions workflow"
+  default_prompt: "Use $github-workflows-skill to create a production-ready GitHub Actions workflow for this repository."
