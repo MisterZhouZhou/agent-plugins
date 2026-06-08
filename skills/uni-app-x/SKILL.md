@@ -50,6 +50,7 @@ Choose the smallest relevant reference file before editing code:
 4. **UCSS and layout**
    - Load `references/guides/development/ucss-layout.md` for App-safe CSS rules, flex layout, rpx, selector limits, and supported properties.
    - Load `references/css/ucss.md` for UCSS constraints summary (flex/absolute only, no style inheritance, text styles on text element, page scroll behavior).
+   - Load `references/css/font-family.md` for `font-family`, `@font-face`, custom font formats, `uni-icon`, and App/HarmonyOS font differences.
    - Design layouts with flex and absolute positioning because App rendering supports a web-CSS subset.
 
 5. **Configuration and project structure**
@@ -126,6 +127,9 @@ Choose the smallest relevant reference file before editing code:
 - Conditions must be boolean: write `if (value != null)` and `if (list.length > 0)`.
 - App layout supports a restricted UCSS subset; use class selectors and flex layouts.
 - Static images, fonts, and media belong in `/static/`; do not put `.uts` or `.css` files there.
+- For custom fonts, prefer `/static/` or `uni_modules/*/static/` assets and load them with `@font-face { src: url(...) }`.
+- App `font-family` does not inherit and does not support comma-separated fallback lists; set one font explicitly on each text-like component that needs it.
+- HarmonyOS custom fonts support `ttf` and `otf`; avoid assuming `woff`, `woff2`, or variable fonts work on App targets.
 - Use `rpx` for responsive sizing and explicit fixed units only when a fixed physical size is intentional.
 - Test target platforms separately because Android, iOS, HarmonyOS, Web, and Mini Programs do not share identical runtime behavior.
 - Use `list-view` for large lists instead of rendering long `v-for` lists inside `scroll-view`.
@@ -164,6 +168,7 @@ Choose the smallest relevant reference file before editing code:
 ### UCSS / Styling
 - `references/guides/development/ucss-layout.md` - UCSS layout and styling constraints (English, with property list)
 - `references/css/ucss.md` - UCSS constraints summary (Chinese)
+- `references/css/font-family.md` - font-family, @font-face, custom font formats, uni-icon, and platform differences
 - `references/features/theme-dark.md` - dark theme, theme.json, uni.setAppTheme
 
 ### API Reference
@@ -248,6 +253,8 @@ Choose the smallest relevant reference file before editing code:
 - UTS language: https://doc.dcloud.net.cn/uni-app-x/uts/
 - Vue in uni-app x: https://doc.dcloud.net.cn/uni-app-x/vue/
 - CSS reference: https://doc.dcloud.net.cn/uni-app-x/css/
+- CSS font-family: https://doc.dcloud.net.cn/uni-app-x/css/font-family.html#font-family
+- CSS at-rules font: https://doc.dcloud.net.cn/uni-app-x/css/common/at-rules.html#font
 - Components: https://doc.dcloud.net.cn/uni-app-x/component/
 - API reference: https://doc.dcloud.net.cn/uni-app-x/api/
 - UTS plugin development: https://doc.dcloud.net.cn/uni-app-x/plugin/uts-plugin.html
