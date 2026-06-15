@@ -50,6 +50,7 @@ Choose the smallest relevant reference file before editing code:
 4. **UCSS and layout**
    - Load `references/guides/development/ucss-layout.md` for App-safe CSS rules, flex layout, rpx, selector limits, and supported properties.
    - Load `references/css/ucss.md` for UCSS constraints summary (flex/absolute only, no style inheritance, text styles on text element, page scroll behavior).
+   - Load `references/css/font-family.md` for `font-family`, `@font-face`, custom font formats, `uni-icon`, and App/HarmonyOS font differences.
    - Design layouts with flex and absolute positioning because App rendering supports a web-CSS subset.
 
 5. **Configuration and project structure**
@@ -126,6 +127,17 @@ Choose the smallest relevant reference file before editing code:
 - Conditions must be boolean: write `if (value != null)` and `if (list.length > 0)`.
 - App layout supports a restricted UCSS subset; use class selectors and flex layouts.
 - Static images, fonts, and media belong in `/static/`; do not put `.uts` or `.css` files there.
+- When images disappear only on HarmonyOS devices, first verify the asset exists, path case matches exactly, the path is absolute under `/static/`, and the compiler can discover it. Prefer static `src="/static/..."` for fixed UI assets instead of dynamic `:src` when possible.
+- For critical local UI images on HarmonyOS, prefer normal PNG `8-bit RGB/RGBA` assets. Convert palette/PaletteAlpha PNGs and device-problematic WebP assets to PNG before debugging layout or color; confirm with `file` or PNG header checks.
+- If a valid local `<image>` renders at first but disappears after tab switches, page show/hide, or repeated navigation on HarmonyOS, force remount the image node on `onPageShow`: gate it with `v-if`, increment a `:key`, and restore visibility in `setTimeout(..., 0)`. Keep the original static `src` when the asset is fixed.
+- When an image is present but appears as blank space, distinguish decode failure from layout behavior: `aspectFit` may create visible padding in containers with different aspect ratios; use `aspectFill` plus `overflow: hidden` when the design requires the image to fill the hero/status-bar area.
+- For opening external apps, browsers, maps, or app stores from uni-app x 4.75 App targets, prefer the `uts-openSchema` plugin (`https://ext.dcloud.net.cn/plugin?name=uts-openSchema`) and import `openSchema`/`canOpenURL` from `@/uni_modules/uts-openSchema`. It supports Android 5.0+, iOS 12+, and HarmonyOS 5.0+ in uni-app x, not Chrome/Safari/WeChat Mini Program.
+- To open Huawei AppGallery on HarmonyOS, call `openSchema('store://appgallery.huawei.com/app/detail?id=' + appId)` inside the HarmonyOS/App platform branch. Use the real AppGallery app id or bundle id for the target app, not example ids.
+- Provide a fallback when AppGallery schema opening fails, commonly `https://appgallery.huawei.com/app/detail?id=<appId>&channelId=SHARE&source=appshare`, opened through the project's webview page with `encodeURIComponent`. Use `canOpenURL()` when the UX needs a pre-check for a scheme.
+- For Android app-store detail pages, `openSchema('market://details?id=' + packageName)` is the common form; keep platform-specific schema calls inside matching conditional compilation blocks such as `APP-HARMONY`, `APP-ANDROID`, or `APP-IOS`.
+- For custom fonts, prefer `/static/` or `uni_modules/*/static/` assets and load them with `@font-face { src: url(...) }`.
+- App `font-family` does not inherit and does not support comma-separated fallback lists; set one font explicitly on each text-like component that needs it.
+- HarmonyOS custom fonts support `ttf` and `otf`; avoid assuming `woff`, `woff2`, or variable fonts work on App targets.
 - Use `rpx` for responsive sizing and explicit fixed units only when a fixed physical size is intentional.
 - Test target platforms separately because Android, iOS, HarmonyOS, Web, and Mini Programs do not share identical runtime behavior.
 - Use `list-view` for large lists instead of rendering long `v-for` lists inside `scroll-view`.
@@ -164,6 +176,7 @@ Choose the smallest relevant reference file before editing code:
 ### UCSS / Styling
 - `references/guides/development/ucss-layout.md` - UCSS layout and styling constraints (English, with property list)
 - `references/css/ucss.md` - UCSS constraints summary (Chinese)
+- `references/css/font-family.md` - font-family, @font-face, custom font formats, uni-icon, and platform differences
 - `references/features/theme-dark.md` - dark theme, theme.json, uni.setAppTheme
 
 ### API Reference
@@ -248,6 +261,8 @@ Choose the smallest relevant reference file before editing code:
 - UTS language: https://doc.dcloud.net.cn/uni-app-x/uts/
 - Vue in uni-app x: https://doc.dcloud.net.cn/uni-app-x/vue/
 - CSS reference: https://doc.dcloud.net.cn/uni-app-x/css/
+- CSS font-family: https://doc.dcloud.net.cn/uni-app-x/css/font-family.html#font-family
+- CSS at-rules font: https://doc.dcloud.net.cn/uni-app-x/css/common/at-rules.html#font
 - Components: https://doc.dcloud.net.cn/uni-app-x/component/
 - API reference: https://doc.dcloud.net.cn/uni-app-x/api/
 - UTS plugin development: https://doc.dcloud.net.cn/uni-app-x/plugin/uts-plugin.html
