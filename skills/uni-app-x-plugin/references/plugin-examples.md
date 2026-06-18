@@ -22,6 +22,8 @@
 - 先把接口声明写完整
 - 页面桥接事件名尽量唯一
 - 平台实现负责把底层行为转回 `success/fail/complete`
+- 调用侧如果是业务页或 demo 页，优先写 `uni.showActionSheet(...)` 这类 `uni.xxx(...)` 形态；不要直接从 `@/uni_modules/<plugin>/utssdk/index.uts` 导入实现函数，除非该插件没有在 `uni-ext-api` 中注册为 `uni` API
+- 需要强类型回调时，可从 `@/uni_modules/<plugin>/utssdk/interface.uts` 导入类型声明
 
 ## 2. `uni-clipboard`
 

@@ -104,6 +104,8 @@ uni_modules/
 - 同时有根 `index.uts` 和平台 `index.uts` 时，优先平台实现
 - 只做单平台插件时，可不写根 `index.uts`
 - 需要共享逻辑时，可在根入口中 `#ifdef` 分发或抽公共文件
+- 如果 `package.json` 的 `uni_modules.uni-ext-api.uni` 已声明 `uni.xxx()` 能力，业务页面/示例页默认直接调用 `uni.xxx(...)`，不要再从 `@/uni_modules/<plugin-id>/utssdk/index.uts` 或平台 `index.uts` 直接导入实现函数
+- 页面中若只是为了拿回调类型、错误类型、参数类型，可继续从 `@/uni_modules/<plugin-id>/utssdk/interface.uts` 导入类型
 
 ## 6. API 插件常见模式
 
@@ -134,3 +136,4 @@ uni_modules/
 - 先看 `package.json` 的 `uni-ext-api` 是否已经定义能力
 - 再看 `interface.uts` 的签名能否承载新增参数
 - 最后补平台实现，不要先改实现再反推声明
+- 如果插件已经通过 `uni-ext-api` 暴露成 `uni.xxx()`，优先检查页面调用方是否还在直接 `import` `utssdk/index.uts`；这类调用通常应该改回 `uni.xxx(...)`
