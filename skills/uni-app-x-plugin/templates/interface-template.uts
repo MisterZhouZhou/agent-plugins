@@ -1,0 +1,23 @@
+export interface Uni {
+  yourApiName(options: YourApiOptions): void
+}
+
+export type YourApi = (options: YourApiOptions) => void
+
+export interface YourApiSuccess {
+  errMsg: string
+}
+
+export interface YourApiFail extends IUniError {
+  errCode: number
+}
+
+export type YourApiSuccessCallback = (result: YourApiSuccess) => void
+export type YourApiFailCallback = (result: YourApiFail) => void
+export type YourApiCompleteCallback = (result: any) => void
+
+export type YourApiOptions = {
+  success?: YourApiSuccessCallback | null,
+  fail?: YourApiFailCallback | null,
+  complete?: YourApiCompleteCallback | null
+}

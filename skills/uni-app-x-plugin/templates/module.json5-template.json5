@@ -1,0 +1,17 @@
+{
+  "module": {
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.LOCATION",
+        "usedScene": {
+          "when": "inuse"
+        },
+        "reason": "$string:permission_reason"
+      }
+    ]
+  }
+}

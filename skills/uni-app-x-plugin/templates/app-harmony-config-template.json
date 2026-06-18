@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@scope/sdk-name": "1.0.0",
+    "local-sdk": "./libs/local-sdk.har"
+  }
+}
