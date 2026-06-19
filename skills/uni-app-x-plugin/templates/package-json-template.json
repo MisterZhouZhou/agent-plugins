@@ -1,0 +1,22 @@
+{
+  "id": "your-plugin-id",
+  "displayName": "你的插件名",
+  "version": "1.0.0",
+  "description": "插件说明",
+  "uni_modules": {
+    "dependencies": [],
+    "uni-ext-api": {
+      "uni": {
+        "yourApiName": {
+          "name": "yourApiName",
+          "app": {
+            "js": false,
+            "kotlin": true,
+            "swift": true,
+            "arkts": true
+          }
+        }
+      }
+    }
+  }
+}

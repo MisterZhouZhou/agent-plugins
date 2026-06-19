@@ -1,0 +1,4 @@
+interface:
+  display_name: "uni-app-x-plugin"
+  short_description: "创建、调试与维护 uni-app x UTS 插件"
+  default_prompt: "Use $uni-app-x-plugin to scaffold or review a uni_modules UTS plugin for uni-app x."
