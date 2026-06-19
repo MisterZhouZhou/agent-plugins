@@ -127,6 +127,9 @@ Choose the smallest relevant reference file before editing code:
 - Conditions must be boolean: write `if (value != null)` and `if (list.length > 0)`.
 - App layout supports a restricted UCSS subset; use class selectors and flex layouts.
 - Static images, fonts, and media belong in `/static/`; do not put `.uts` or `.css` files there.
+- For custom fonts, prefer `/static/` or `uni_modules/*/static/` assets and load them with `@font-face { src: url(...) }`.
+- App `font-family` does not inherit and does not support comma-separated fallback lists; set one font explicitly on each text-like component that needs it.
+- HarmonyOS custom fonts support `ttf` and `otf`; avoid assuming `woff`, `woff2`, or variable fonts work on App targets.
 - When images disappear only on HarmonyOS devices, first verify the asset exists, path case matches exactly, the path is absolute under `/static/`, and the compiler can discover it. Prefer static `src="/static/..."` for fixed UI assets instead of dynamic `:src` when possible.
 - For critical local UI images on HarmonyOS, prefer normal PNG `8-bit RGB/RGBA` assets. Convert palette/PaletteAlpha PNGs and device-problematic WebP assets to PNG before debugging layout or color; confirm with `file` or PNG header checks.
 - If a valid local `<image>` renders at first but disappears after tab switches, page show/hide, or repeated navigation on HarmonyOS, force remount the image node on `onPageShow`: gate it with `v-if`, increment a `:key`, and restore visibility in `setTimeout(..., 0)`. Keep the original static `src` when the asset is fixed.
