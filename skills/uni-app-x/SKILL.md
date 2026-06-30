@@ -138,6 +138,103 @@ Choose the smallest relevant reference file before editing code:
 - For custom fonts, prefer `/static/` or `uni_modules/*/static/` assets and load them with `@font-face { src: url(...) }`.
 - App `font-family` does not inherit and does not support comma-separated fallback lists; set one font explicitly on each text-like component that needs it.
 - HarmonyOS custom fonts support `ttf` and `otf`; avoid assuming `woff`, `woff2`, or variable fonts work on App targets.
+- On HarmonyOS 6 / API 20, native `<input>` can clip Chinese text when the input itself has a fixed `height`, vertical `padding`, or a line box that does not match the platform input renderer. Prefer a styled outer wrapper for border/background/radius/padding and keep the `<input>` itself simple: `flex: 1`, no fixed `height`, no vertical padding, and no forced line-height. If a compact visual height is required, set `min-height`/padding on the wrapper instead of the input.
+- Do not assume Hello uni-app x input demos are production-safe for HarmonyOS visual styling. Demo patterns such as `.uni-input { height: 28px; font-size: 15px; padding: 0; }` are examples, not a guarantee against HarmonyOS device text clipping. For production forms, verify on real HarmonyOS devices after changing input height, font-size, padding, font-family, or placeholder styles.
+- `font-size` alone is usually not the root cause of HarmonyOS input clipping, but it increases risk when combined with fixed input height or custom font metrics. Keep font size on text-like components intentional and ensure the input's available vertical space is larger than the font line box; avoid setting `line-height` on `<input>` unless verified on target devices.
+- For text-input rows, use a stable pattern: wrapper view owns visual chrome (`min-height`, horizontal padding, border, background, radius, row alignment); input owns data entry only (`class="input-control"`, `flex: 1`, `padding: 0`, transparent/white background, no fixed height, no forced line-height, no font-size). Place clear/eye icons as siblings inside the wrapper with fixed icon sizes.
+- In this project, every `<input>` under `pages/` and `components/` should use `class="input-control"`. Keep `height`, `line-height`, and `font-size` off `.input-control`; use the wrapper for visual sizing and surrounding text elements for typography. Preserve this with `tests/input-harmony-compat.test.mjs` when editing inputs.
+- For constrained fields such as pinyin, do not rely on keyboard type or placeholder text to limit input. Sanitize in `@input` and bind the sanitized value back to the input, e.g. keep only ASCII letters plus allowed pinyin tone marks/spacing according to the product rule, so Chinese characters pasted or typed by IME composition do not remain in the value.
+
+  HarmonyOS-safe input row example:
+
+  ```vue
+  <template>
+    <view class="field-row">
+      <input
+        class="input-control"
+        :value="formValue"
+        placeholder="请输入"
+        @input="onInput"
+      />
+      <image v-if="formValue.length > 0" class="field-icon" src="/static/icons/clear.png" @click="clearInput" />
+    </view>
+  </template>
+
+  <script setup lang="uts">
+  const formValue = ref('')
+
+  const onInput = (event: UniInputEvent) => {
+    formValue.value = event.detail.value
+  }
+
+  const clearInput = () => {
+    formValue.value = ''
+  }
+  </script>
+
+  <style>
+  .field-row {
+    min-height: 88rpx;
+    padding-left: 24rpx;
+    padding-right: 16rpx;
+    border-radius: 18rpx;
+    background-color: #FFFFFF;
+    border-width: 2rpx;
+    border-style: solid;
+    border-color: #E6D6B8;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .input-control {
+    flex: 1;
+    padding: 0;
+    background-color: #FFFFFF;
+    color: #26384D;
+  }
+
+  .field-icon {
+    width: 44rpx;
+    height: 44rpx;
+    margin-left: 12rpx;
+  }
+  </style>
+  ```
+
+  Pinyin sanitizing example:
+
+  ```vue
+  <template>
+    <view class="field-row">
+      <input class="input-control" :value="pinyinValue" placeholder="请输入拼音" @input="onPinyinInput" />
+    </view>
+  </template>
+
+  <script setup lang="uts">
+  const pinyinValue = ref('')
+
+  const onPinyinInput = (event: UniInputEvent) => {
+    pinyinValue.value = sanitizePinyin(event.detail.value)
+  }
+
+  const sanitizePinyin = (value: string): string => {
+    let result = ''
+    for (let i = 0; i < value.length; i++) {
+      const ch = value.substring(i, i + 1)
+      const code = ch.charCodeAt(0)
+      const isLower = code >= 97 && code <= 122
+      const isUpper = code >= 65 && code <= 90
+      const isSeparator = ch == ' ' || ch == '-' || ch == "'"
+      const isTone =
+        'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüńňǹḿ'.indexOf(ch) >= 0
+      if (isLower || isUpper || isSeparator || isTone) {
+        result += ch
+      }
+    }
+    return result
+  }
+  </script>
+  ```
 - Use `rpx` for responsive sizing and explicit fixed units only when a fixed physical size is intentional.
 - Test target platforms separately because Android, iOS, HarmonyOS, Web, and Mini Programs do not share identical runtime behavior.
 - Use `list-view` for large lists instead of rendering long `v-for` lists inside `scroll-view`.
