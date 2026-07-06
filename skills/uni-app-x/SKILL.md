@@ -126,6 +126,7 @@ Choose the smallest relevant reference file before editing code:
 - UTS has no `undefined`; initialize values and use `null`.
 - Conditions must be boolean: write `if (value != null)` and `if (list.length > 0)`.
 - App layout supports a restricted UCSS subset; use class selectors and flex layouts.
+- HarmonyOS supports `border-style: dashed`, but real devices may render vertical single-side dashed borders such as `border-left-style: dashed` as a solid line in thin guide-line scenarios. For Tianzi grid internal cross lines, keep the horizontal guide as `border-top-style: dashed`; draw the vertical guide as an equal-length horizontal dashed border and rotate it 90 degrees with `transform: rotate(90deg)` and `transform-origin: center`. Do not claim `dashed` is unsupported; document it as a HarmonyOS real-device rendering workaround and verify on device.
 - Static images, fonts, and media belong in `/static/`; do not put `.uts` or `.css` files there.
 - When images disappear only on HarmonyOS devices, first verify the asset exists, path case matches exactly, the path is absolute under `/static/`, and the compiler can discover it. Prefer static `src="/static/..."` for fixed UI assets instead of dynamic `:src` when possible.
 - For critical local UI images on HarmonyOS, prefer normal PNG `8-bit RGB/RGBA` assets. Convert palette/PaletteAlpha PNGs and device-problematic WebP assets to PNG before debugging layout or color; confirm with `file` or PNG header checks.
