@@ -1,5 +1,5 @@
 ---
-name: yuque-requirements
+name: yuque-develop-requirements
 description: 当用户希望基于语雀文档链接抓取文档内容、清洗 HTML/CSS 包裹内容为 Markdown，并进一步提炼成技术实现需求文档时使用。适用于语雀 PRD、业务需求说明转前端实现文档或后端实现文档、技术需求文档、开发提示词的场景；缺失接口或字段信息时需明确写出"暂无"或使用占位标签提醒，不补猜。支持前端(JavaScript/TypeScript)和后端(Java)两种技术栈需求分析。
 ---
 

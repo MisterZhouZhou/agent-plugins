@@ -15,6 +15,7 @@
     ├── cli-session-manager/
     ├── cold-water/
     ├── electron-skills/
+    ├── figma-rest-h2d-source/
     ├── geo-skill/
     ├── grok-imagine-video/
     ├── iOS-skill/
@@ -29,7 +30,7 @@
     ├── vue-skill/
     ├── yuque-frontend-requirements/
     ├── yuque-kb-search/
-    └── yuque-requirements/
+    └── yuque-develop-requirements/
 ```
 
 ## Marketplace 分组
@@ -45,7 +46,7 @@
 - `project-skills`
   - `yuque-kb-search`
   - `yuque-frontend-requirements`
-  - `yuque-requirements`
+  - `yuque-develop-requirements`
   - `geo-skill`
 - `dev-skills`
   - `uni-app-x`
@@ -56,6 +57,7 @@
   - `vue-skill`
   - `svelte-skill`
   - `threejs-skill`
+  - `figma-rest-h2d-source`
   - `safari-web-extension`
   - `vscode-extension-skills`
   - `cli-session-manager`
@@ -223,7 +225,7 @@
 
 - `skills/yuque-frontend-requirements/SKILL.md`
 
-### 8. yuque-requirements
+### 8. yuque-develop-requirements
 
 用途：
 
@@ -244,7 +246,7 @@
 
 详情见：
 
-- `skills/yuque-requirements/SKILL.md`
+- `skills/yuque-develop-requirements/SKILL.md`
 
 ### 9. geo-skill
 
@@ -406,7 +408,30 @@
 
 - `skills/threejs-skill/SKILL.md`
 
-### 18. safari-web-extension
+### 18. figma-rest-h2d-source
+
+用途：
+
+- 在 Figma MCP `get_metadata` / `get_design_context` 不可用、限流或未注入时，用 Figma REST 节点 JSON 作为 h2d 组件生成的兜底数据源
+- 支持从完整 Figma URL 或 `fileKey` + `nodeId` 拉取 `/v1/files/:fileKey/nodes` 原始节点树
+- 辅助提取尺寸、坐标、颜色、文字、圆角、Auto Layout 等设计事实，并标注 REST 原始 JSON 来源
+
+适用请求示例：
+
+- “用 REST 兜底继续生成这个 h2d 组件”
+- “Figma MCP 拿不到 design_context，改用 Figma REST JSON”
+- “根据这个 Figma URL 拉节点 JSON 做 h2d”
+
+需要的环境变量：
+
+- `FIGMA_TOKEN` 或 `FIGMA_REST_TOKEN`
+  Figma REST API Token，必填。用于调用 Figma REST `/v1/files/:fileKey/nodes` 接口。
+
+详情见：
+
+- `skills/figma-rest-h2d-source/SKILL.md`
+
+### 19. safari-web-extension
 
 用途：
 
@@ -424,7 +449,7 @@
 
 - `skills/safari-web-extension/SKILL.md`
 
-### 19. vscode-extension-skills
+### 20. vscode-extension-skills
 
 用途：
 
@@ -441,7 +466,7 @@
 
 - `skills/vscode-extension-skills/SKILL.md`
 
-### 20. cli-session-manager
+### 21. cli-session-manager
 
 用途：
 
@@ -459,7 +484,7 @@
 
 - `skills/cli-session-manager/SKILL.md`
 
-### 21. cold-water
+### 22. cold-water
 
 用途：
 

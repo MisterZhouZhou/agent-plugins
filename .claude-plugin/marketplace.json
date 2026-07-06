@@ -30,7 +30,7 @@
       "skills": [
         "./skills/yuque-kb-search",
         "./skills/yuque-frontend-requirements",
-        "./skills/yuque-requirements",
+        "./skills/yuque-develop-requirements",
         "./skills/geo-skill"
       ]
     },
@@ -48,6 +48,7 @@
         "./skills/vue-skill",
         "./skills/svelte-skill",
         "./skills/threejs-skill",
+        "./skills/figma-rest-h2d-source",
         "./skills/safari-web-extension",
         "./skills/vscode-extension-skills",
         "./skills/cli-session-manager",

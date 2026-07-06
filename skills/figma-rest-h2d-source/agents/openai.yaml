@@ -1,0 +1,7 @@
+interface:
+  display_name: "Figma REST H2D Source"
+  short_description: "用 Figma REST 数据兜底生成 h2d"
+  default_prompt: "Use $figma-rest-h2d-source to extract a Figma node via REST and build an h2d component."
+
+policy:
+  allow_implicit_invocation: true
