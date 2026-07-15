@@ -13,6 +13,8 @@
     ├── azure-ssml-tts/
     ├── chrome-extension-icon-generator/
     ├── cli-session-manager/
+    ├── codex-session-export/
+    ├── codex-session-import/
     ├── cold-water/
     ├── electron-skills/
     ├── figma-rest-h2d-source/
@@ -61,6 +63,8 @@
   - `safari-web-extension`
   - `vscode-extension-skills`
   - `cli-session-manager`
+  - `codex-session-export`
+  - `codex-session-import`
   - `cold-water`
 
 ## Skills 一览
@@ -484,7 +488,39 @@
 
 - `skills/cli-session-manager/SKILL.md`
 
-### 22. cold-water
+### 22. codex-session-export
+
+用途：
+
+- 把本机 `~/.codex` 中属于当前项目的 Codex 会话导出到项目内 `.codex-session-archive`
+- 支持导出全部会话、最近一条会话或指定 session
+
+适用请求示例：
+
+- “把当前项目的 Codex 会话导出到项目档案”
+- “保存这个 session，之后要在另一台机器恢复”
+
+详情见：
+
+- `skills/codex-session-export/SKILL.md`
+
+### 23. codex-session-import
+
+用途：
+
+- 把项目 `.codex-session-archive` 中的 Codex 会话导回本机 `~/.codex`
+- 支持冲突检测、批量导入和临时恢复
+
+适用请求示例：
+
+- “把项目里的 Codex 会话恢复到本机”
+- “导入这个 session，然后用 codex resume 继续”
+
+详情见：
+
+- `skills/codex-session-import/SKILL.md`
+
+### 24. cold-water
 
 用途：
 

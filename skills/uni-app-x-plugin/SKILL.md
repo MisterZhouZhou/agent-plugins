@@ -3,7 +3,7 @@ name: uni-app-x-plugin
 description: "Create, inspect, debug, and structure uni-app x UTS plugins under uni_modules for Android, iOS, HarmonyOS, Web, or Mini Program targets. Use this skill when Codex needs to build or review package.json plugin metadata, utssdk/interface.uts APIs, platform-specific index.uts implementations, uni-ext-api declarations, protocol.uts validation, HarmonyOS module.json5/config.json/resources setup, or plugin-market-ready uni-app x plugin layouts."
 ---
 
-# uni-app-x-plugin
+# uni-app x Plugin Skill
 
 为 `uni-app x` 的 `UTS` 插件开发提供专项指导，聚焦 `uni_modules` 目录、`utssdk` 结构、插件 API 声明、分平台实现，以及 HarmonyOS 侧的 ArkTS/ohpm 约束。
 
@@ -17,7 +17,6 @@ description: "Create, inspect, debug, and structure uni-app x UTS plugins under 
    - 再读 `references/plugin-examples.md`
 3. 目标包含 HarmonyOS、`@ohos.*`、`@kit.*`、`.har`、`.ets`、`module.json5`、`resources`、权限或 `ohpm`
    - 再读 `references/harmony-plugin-notes.md`
-   - 如果涉及系统打印、`@ohos.print`、`ohos.permission.PRINT`、`uni.chooseFile` 返回的 `file://docs/storage/...`，必须查看该文件的打印专项经验
 4. 需要直接起草文件
    - 使用 `templates/` 下的模板
 
@@ -59,7 +58,6 @@ description: "Create, inspect, debug, and structure uni-app x UTS plugins under 
 - 继续遵守 `uni-app x`/`UTS` 基础约束：不用 `undefined`，条件表达式显式写成布尔判断。
 - HarmonyOS 的 `config.json` 不能写注释；本地依赖路径相对 `config.json` 解析。
 - 需要鸿蒙权限、资源、`.ets`、`.har`、`ohpm`、`module.json5`、`getContext` 或 `overrides` 时，优先查 `references/harmony-plugin-notes.md`。
-- HarmonyOS 系统打印不要照搬 ArkTS 官方示例的 `@kit.BasicServicesKit` 命名导出；在 uni-app x UTS 插件中优先用 `@ohos.print` / `@ohos.file.fileuri`，并按 `references/harmony-plugin-notes.md` 的打印专项经验处理权限、文件 URI 和 `UIAbilityContext`。
 - 需要举例时，优先复用 `uni-actionSheet`、`uni-clipboard`、`uni-payment` 这三种模式。
 
 ## Typical Decisions
