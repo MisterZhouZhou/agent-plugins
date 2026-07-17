@@ -1,0 +1,53 @@
+{
+  "skill_name": "codex-plugin-marketplaces",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "在当前仓库创建一个名为 release-notes 的 Codex 插件市场插件，包含一个 Skill，并帮我安装。",
+      "expected_output": "Creates the repository plugin and `.agents/plugins/marketplace.json`, validates them, then stops for explicit confirmation before marketplace registration or plugin installation.",
+      "files": [],
+      "assertions": [
+        "Uses plugins/release-notes and a matching plugin manifest name",
+        "Creates a Codex marketplace entry with a local relative source path",
+        "Does not run global marketplace or plugin add commands before confirmation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "把我已经安装的 memory-with-files 插件同步到另一个 marketplace 仓库，包含 Hooks，不要破坏那个仓库现有 Claude skills。",
+      "expected_output": "Locates the maintainable source rather than editing cache, copies the complete plugin surface, preserves `.claude-plugin`, adds a separate Codex marketplace, and verifies Hook paths/protocol.",
+      "files": [],
+      "assertions": [
+        "Distinguishes source repository from installed cache",
+        "Copies manifest, skills, hooks, scripts, and assets/templates as applicable",
+        "Preserves `.claude-plugin/marketplace.json`",
+        "Checks command Hooks for PLUGIN_ROOT"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我的插件市场在 GitHub owner/tools，main 分支。配置远程 marketplace 并安装 demo-plugin。",
+      "expected_output": "Keeps the plugin entry repository-relative, prepares owner/repo Git marketplace registration and plugin add commands, and requests confirmation before executing them.",
+      "files": [],
+      "assertions": [
+        "Does not put a Git URL in marketplace plugin source",
+        "Uses `codex plugin marketplace add owner/tools --ref main`",
+        "Uses `codex plugin add demo-plugin@<marketplace-name>`",
+        "Shows both exact commands and requests confirmation in the same message before execution"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我改了 Git marketplace 里的插件，但 Codex 还是旧版，直接修好。",
+      "expected_output": "Verifies source and installed version, validates and updates the cachebuster, ensures changes are committed/pushed, then asks before marketplace upgrade and reinstall; finishes with a new-thread and runtime verification step.",
+      "files": [],
+      "assertions": [
+        "Does not edit the installed cache as source",
+        "Runs validation before cachebuster update",
+        "Requires Git commit/push before marketplace upgrade",
+        "Requests confirmation before upgrade/reinstall",
+        "Requires a new thread after reinstall"
+      ]
+    }
+  ]
+}

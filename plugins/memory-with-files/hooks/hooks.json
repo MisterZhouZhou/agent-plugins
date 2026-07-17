@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/memory_hook.py session-start",
+            "commandWindows": "python %PLUGIN_ROOT%\\hooks\\memory_hook.py session-start",
+            "statusMessage": "Restoring active memory"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/memory_hook.py pre-compact",
+            "commandWindows": "python %PLUGIN_ROOT%\\hooks\\memory_hook.py pre-compact",
+            "statusMessage": "Preparing memory handoff"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 # Agent Plugins
 
-本仓库用于维护本地 Agent Skills，并通过 `.claude-plugin/marketplace.json` 暴露给插件市场配置。
+本仓库用于维护本地 Agent Skills 和 Codex Plugins，并通过 marketplace 配置暴露给插件系统。
 
 ## 目录结构
 
@@ -8,11 +8,16 @@
 .
 ├── .claude-plugin/
 │   └── marketplace.json
+├── .agents/plugins/
+│   └── marketplace.json
+├── plugins/
+│   └── memory-with-files/
 └── skills/
     ├── api-generate-image/
     ├── azure-ssml-tts/
     ├── chrome-extension-icon-generator/
     ├── cli-session-manager/
+    ├── codex-plugin-marketplaces/
     ├── codex-session-export/
     ├── codex-session-import/
     ├── cold-water/
@@ -35,37 +40,110 @@
     └── yuque-develop-requirements/
 ```
 
-## Marketplace 分组
+## Codex 插件市场
 
-当前在 `.claude-plugin/marketplace.json` 中配置了三个插件分组：
+- 市场名称：`codex-agent-plugins`
+- 配置文件：`.agents/plugins/marketplace.json`
+- 当前插件：`memory-with-files`
 
-- `draw-skills`
-  - `chrome-extension-icon-generator`
-  - `image-size-generator`
-  - `grok-imagine-video`
-  - `azure-ssml-tts`
-  - `api-generate-image`
-- `project-skills`
-  - `yuque-kb-search`
-  - `yuque-frontend-requirements`
-  - `yuque-develop-requirements`
-  - `geo-skill`
-- `dev-skills`
-  - `uni-app-x`
-  - `tauri-desktop`
-  - `electron-skills`
-  - `iOS-skill`
-  - `react-skill`
-  - `vue-skill`
-  - `svelte-skill`
-  - `threejs-skill`
-  - `figma-rest-h2d-source`
-  - `safari-web-extension`
-  - `vscode-extension-skills`
-  - `cli-session-manager`
-  - `codex-session-export`
-  - `codex-session-import`
-  - `cold-water`
+### memory-with-files
+
+将项目的长期上下文保存在项目根目录的 `.memory/` 中，不接管 Superpowers 或 OpenSpec 的任务状态。
+
+- `SessionStart`：恢复当前项目已激活的 `memory.md` 和 `handoff.md`
+- `PreCompact`：在压缩上下文前提醒刷新 `handoff.md`
+- 项目记忆只写入 `<project-root>/.memory/`，不会写入全局 Codex Memories
+
+### 安装
+
+添加本地插件市场并安装插件：
+
+```bash
+codex plugin marketplace add ~/Desktop/ai/agent-plugins
+codex plugin add memory-with-files@codex-agent-plugins
+```
+
+验证插件是否可用：
+
+```bash
+codex plugin list --marketplace codex-agent-plugins
+```
+
+安装后需要审核并信任该插件的 `SessionStart` 和 `PreCompact` Hook，然后重新打开一个 Codex 会话。
+
+### 使用
+
+在需要保存长期上下文的项目根目录中启动 Codex，然后显式调用：
+
+```text
+$memory-with-files 为当前项目初始化持久记忆，主题为“主题名称”，任务来源为 conversation
+```
+
+也可以直接使用自然语言，例如：
+
+```text
+记住这个项目的当前上下文
+保存当前项目记忆
+为这项工作创建可跨会话恢复的项目记忆
+```
+
+初始化后，插件会在当前项目中创建：
+
+```text
+.memory/
+├── .active_memory
+└── <主题名称>/
+    ├── memory.md
+    ├── findings.md
+    └── handoff.md
+```
+
+- `memory.md`：保存稳定约束、决策和任务来源
+- `findings.md`：保存调查证据、实验结果和已排除的假设
+- `handoff.md`：保存当前状态、最近验证结果和下一次恢复位置
+- `SessionStart`：在新会话中自动恢复当前激活的 `memory.md` 和 `handoff.md`
+- `PreCompact`：在上下文压缩前提醒更新 `handoff.md`
+
+项目记忆只保存在当前仓库的 `.memory/` 中，不会写入 Codex 全局 Memories，也不会替代 Superpowers 或 OpenSpec 的任务管理。
+
+## Claude 插件市场
+
+- 市场名称：`claude-agent-plugins`
+- 配置文件：`.claude-plugin/marketplace.json`
+- 当前包含三个插件分组：
+
+### draw-skills
+
+- `chrome-extension-icon-generator`
+- `image-size-generator`
+- `grok-imagine-video`
+- `azure-ssml-tts`
+- `api-generate-image`
+
+### project-skills
+
+- `yuque-kb-search`
+- `yuque-frontend-requirements`
+- `yuque-develop-requirements`
+- `geo-skill`
+
+### dev-skills
+
+- `uni-app-x`
+- `tauri-desktop`
+- `electron-skills`
+- `iOS-skill`
+- `react-skill`
+- `vue-skill`
+- `svelte-skill`
+- `threejs-skill`
+- `figma-rest-h2d-source`
+- `safari-web-extension`
+- `vscode-extension-skills`
+- `cli-session-manager`
+- `codex-session-export`
+- `codex-session-import`
+- `cold-water`
 
 ## Skills 一览
 
@@ -536,6 +614,33 @@
 详情见：
 
 - `skills/cold-water/SKILL.md`
+
+### 25. codex-plugin-marketplaces
+
+用途：
+
+- 管理 Codex 插件和插件市场的完整生命周期
+- 覆盖插件创建与迁移、本地或 Git marketplace 发布、安装与更新、缓存版本处理、Hook 信任和旧版本故障排查
+- 区分源码仓库、已安装缓存、Codex marketplace、Claude marketplace 和 Codex 全局状态，避免修改错误目标
+- 提供只读 marketplace 审计脚本，检查插件名称、目录、manifest、策略和 Hook 路径是否一致
+
+适用请求示例：
+
+- “在当前仓库创建一个 Codex marketplace 插件并安装”
+- “把现有插件迁移到另一个 marketplace 仓库”
+- “配置 Git marketplace 并安装插件”
+- “插件更新后 Codex 仍然加载旧版本，帮我排查”
+
+审计当前仓库：
+
+```bash
+python3 skills/codex-plugin-marketplaces/scripts/audit_marketplace.py .
+```
+
+详情见：
+
+- `skills/codex-plugin-marketplaces/SKILL.md`
+- `skills/codex-plugin-marketplaces/references/`
 
 ## 维护建议
 
