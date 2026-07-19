@@ -54,7 +54,8 @@
         "./skills/cli-session-manager",
         "./skills/codex-session-export",
         "./skills/codex-session-import",
-        "./skills/cold-water"
+        "./skills/cold-water",
+        "./skills/cdp-skill"
       ]
     }
   ]

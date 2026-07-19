@@ -15,6 +15,7 @@
 └── skills/
     ├── api-generate-image/
     ├── azure-ssml-tts/
+    ├── cdp-skill/
     ├── chrome-extension-icon-generator/
     ├── cli-session-manager/
     ├── codex-plugin-marketplaces/
@@ -144,6 +145,7 @@ $memory-with-files 为当前项目初始化持久记忆，主题为“主题名�
 - `codex-session-export`
 - `codex-session-import`
 - `cold-water`
+- `cdp-skill`
 
 ## Skills 一览
 
@@ -615,7 +617,26 @@ $memory-with-files 为当前项目初始化持久记忆，主题为“主题名�
 
 - `skills/cold-water/SKILL.md`
 
-### 25. codex-plugin-marketplaces
+### 25. cdp-skill
+
+用途：
+
+- 分析、设计、实现、审查和排查 Chromium DevTools Protocol（CDP）集成
+- 覆盖远程调试端点发现、WebSocket 会话、Runtime 注入、页面重载重注入、renderer bridge、watcher 恢复和 CDP 截图验证
+- 强调 loopback 绑定、目标身份校验、注入幂等性和不修改官方应用文件的增强方式
+
+适用请求示例：
+
+- “帮我分析这个项目的 CDP 连接和注入流程”
+- “排查 Electron 远程调试端口或 WebSocket 连接问题”
+- “通过 CDP 给 Chromium 应用注入脚本并支持页面重载恢复”
+
+详情见：
+
+- `skills/cdp-skill/SKILL.md`
+- `skills/cdp-skill/references/`
+
+### 26. codex-plugin-marketplaces
 
 用途：
 
