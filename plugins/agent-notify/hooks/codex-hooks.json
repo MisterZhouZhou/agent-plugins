@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AGENT_NOTIFY_ICON_DIR=\"${PLUGIN_ROOT}/assets\" python3 \"${PLUGIN_ROOT}/bin/agent-notify\" codex stop",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AGENT_NOTIFY_ICON_DIR=\"${PLUGIN_ROOT}/assets\" python3 \"${PLUGIN_ROOT}/bin/agent-notify\" codex permission",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

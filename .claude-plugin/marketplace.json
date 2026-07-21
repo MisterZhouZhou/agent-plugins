@@ -10,6 +10,13 @@
   },
   "plugins": [
     {
+      "name": "agent-notify",
+      "description": "macOS desktop notifications for Claude Code lifecycle events (Stop and permission_prompt).",
+      "source": "./plugins/agent-notify",
+      "strict": false,
+      "category": "Productivity"
+    },
+    {
       "name": "draw-skills",
       "description": "Collection of draw skills",
       "source": "./",

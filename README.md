@@ -11,6 +11,7 @@
 ├── .agents/plugins/
 │   └── marketplace.json
 ├── plugins/
+│   ├── agent-notify/
 │   └── memory-with-files/
 └── skills/
     ├── api-generate-image/
@@ -45,7 +46,7 @@
 
 - 市场名称：`codex-agent-plugins`
 - 配置文件：`.agents/plugins/marketplace.json`
-- 当前插件：`memory-with-files`
+- 当前插件：`memory-with-files`、`agent-notify`
 
 ### memory-with-files
 
@@ -107,11 +108,65 @@ $memory-with-files 为当前项目初始化持久记忆，主题为“主题名�
 
 项目记忆只保存在当前仓库的 `.memory/` 中，不会写入 Codex 全局 Memories，也不会替代 Superpowers 或 OpenSpec 的任务管理。
 
+### agent-notify
+
+将 Codex 的 `Stop` 和 `PermissionRequest` 事件转发为 macOS 原生桌面通知，回复完成或权限申请时立刻在系统通知中心提醒，点击通知激活发起任务的终端应用。
+
+- `Stop`：当前回合结束，通知正文显示 `last_assistant_message` 摘要
+- `PermissionRequest`：Codex 正在等待用户授权
+- 通知按项目路径分组，新通知替换旧通知
+- 优先使用 `terminal-notifier`，未安装时降级到 `osascript` 弹窗
+- macOS 独占；建议先安装 `brew install terminal-notifier`
+
+#### 安装
+
+```bash
+codex plugin marketplace add ~/Desktop/ai/agent-plugins
+codex plugin add agent-notify@codex-agent-plugins
+```
+
+安装后打开 `/hooks` 审核并信任 `Stop` 和 `PermissionRequest` Hook，然后重新打开一个 Codex 会话。
+
+#### 手动测试
+
+```bash
+printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"Codex 通知验证"}' \
+  | python3 ~/.codex/plugins/agent-notify/bin/agent-notify codex stop
+```
+
 ## Claude 插件市场
 
 - 市场名称：`claude-agent-plugins`
 - 配置文件：`.claude-plugin/marketplace.json`
-- 当前包含三个插件分组：
+- 当前包含 `agent-notify` 插件与四个 skill 分组：
+
+### agent-notify
+
+Claude Code 回合结束或触发权限提示时，通过 macOS 通知栏推送提醒；点击通知回到发起会话的终端窗口。仅支持 macOS。
+
+- `Stop`：会话结束时提示 `last_assistant_message` 摘要
+- `Notification` + matcher `permission_prompt`：授权等待中提醒
+- 图标随插件目录分发，通过 `${CLAUDE_PLUGIN_ROOT}/assets` 加载
+- 首选 `terminal-notifier`，缺失时降级到 `osascript`
+
+#### 安装
+
+```bash
+brew install terminal-notifier
+/plugin marketplace add ~/Desktop/ai/agent-plugins
+/plugin install agent-notify@claude-agent-plugins
+```
+
+在 Claude Code 中重新启动会话生效。首次启用如提示 Hook 需要信任，按提示确认即可。
+
+#### 手动测试
+
+```bash
+printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"Claude 通知验证"}' \
+  | python3 ~/.claude/plugins/agent-notify/bin/agent-notify claude stop
+```
+
+实际安装路径以 Claude Code 插件缓存位置为准。
 
 ### draw-skills
 

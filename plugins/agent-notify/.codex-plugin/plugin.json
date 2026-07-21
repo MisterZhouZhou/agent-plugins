@@ -1,0 +1,17 @@
+{
+  "name": "agent-notify",
+  "version": "0.1.0+codex",
+  "description": "macOS desktop notifications for Codex lifecycle events (Stop and PermissionRequest).",
+  "author": {
+    "name": "MisterZhouZhou"
+  },
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "Agent Notify",
+    "shortDescription": "macOS notifications for Codex Stop and PermissionRequest hooks.",
+    "longDescription": "Sends native macOS notifications when Codex finishes a turn or requests permission. Uses terminal-notifier when available and falls back to AppleScript. macOS only.",
+    "developerName": "MisterZhouZhou",
+    "category": "Productivity",
+    "capabilities": ["Interactive"]
+  }
+}
