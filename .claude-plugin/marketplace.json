@@ -62,7 +62,8 @@
         "./skills/codex-session-export",
         "./skills/codex-session-import",
         "./skills/cold-water",
-        "./skills/cdp-skill"
+        "./skills/cdp-skill",
+        "./skills/dual-cli-plugin"
       ]
     }
   ]
