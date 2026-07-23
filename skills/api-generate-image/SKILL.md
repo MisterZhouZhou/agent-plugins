@@ -9,11 +9,12 @@ Use this skill to generate raster images through an OpenAI-compatible Image API.
 
 ## Rules
 
-- Resolve credentials in this order: environment variables first, then `~/.codex/api-generate-image/config.json`, then interactive `--configure` prompts when a terminal is available.
-- `OPENAI_API_KEY` is always required. `CUSTOM_IMAGE_URL` / `OPENAI_BASE_URL` are optional — when both are absent the script calls the official OpenAI API (`https://api.openai.com/v1`).
+- Resolve credentials in this order: environment variables first, then the shared `~/.agents/api-generate-image/config.json`, then interactive `--configure` prompts when a terminal is available.
+- `OPENAI_API_KEY` is always required. `CUSTOM_IMAGE_URL` is optional; when absent the script calls the official OpenAI API (`https://api.openai.com/v1`).
 - Never echo, commit, or write API keys anywhere except the user-local config file after explicit confirmation.
 - Prefer `scripts/generate_image.py` instead of hand-writing one-off API callers.
 - If `CUSTOM_IMAGE_URL` is set to a path such as `https://host/api/image/generate`, normalize the same origin to `https://host/v1` and call `/v1/images/generations`.
+- Use `--custom-image-url` for a one-time endpoint override.
 - Default model is `gpt-image-2`; pass `--model` to override (e.g. `dall-e-3`).
 - Keep the user's prompt verbatim unless they ask for prompt polishing.
 
@@ -23,13 +24,12 @@ Use this skill to generate raster images through an OpenAI-compatible Image API.
 |---|---|---|
 | `OPENAI_API_KEY` | Yes | API authentication key |
 | `CUSTOM_IMAGE_URL` | No | Full URL of a custom image endpoint; script derives `/v1` base from it |
-| `OPENAI_BASE_URL` | No | Explicit OpenAI-compatible base URL (takes precedence over `CUSTOM_IMAGE_URL`) |
 
-When neither `CUSTOM_IMAGE_URL` nor `OPENAI_BASE_URL` is set, the script defaults to the official OpenAI API.
+When `CUSTOM_IMAGE_URL` is not set, the script defaults to the official OpenAI API.
 
 ## config.json format
 
-Credentials can be stored in `~/.codex/api-generate-image/config.json` (file is created by `--configure` or written manually). Example:
+Credentials are stored in the agent-shared `~/.agents/api-generate-image/config.json` (created by `--configure` or written manually), so Codex and other agents can reuse the same authorization. Example:
 
 ```json
 {
@@ -54,7 +54,7 @@ Environment variables always override this file. Do not commit the config file.
 python skills/api-generate-image/scripts/generate_image.py --configure
 ```
 
-The script prompts for missing values, hides API-key input, and persists them to `~/.codex/api-generate-image/config.json` after confirmation.
+The script prompts for missing values, hides API-key input, and persists them to `~/.agents/api-generate-image/config.json` after confirmation.
 
 ## Quick start
 
@@ -70,6 +70,16 @@ OPENAI_API_KEY=sk-... CUSTOM_IMAGE_URL=https://my-proxy.example.com/v1/images/ge
   python skills/api-generate-image/scripts/generate_image.py \
   --prompt "A sunset over the ocean" \
   --model dall-e-3 \
+  --out output/imagegen/sunset.png \
+  --force
+```
+
+The equivalent CLI override is:
+
+```bash
+OPENAI_API_KEY=sk-... python skills/api-generate-image/scripts/generate_image.py \
+  --custom-image-url https://my-proxy.example.com/v1/images/generations \
+  --prompt "A sunset over the ocean" \
   --out output/imagegen/sunset.png \
   --force
 ```
@@ -112,7 +122,7 @@ try {
 
 ## Troubleshooting
 
-- `404 page not found` on `/api/image/generate`: use the same host's `/v1/images/generations` route by setting `OPENAI_BASE_URL=https://host/v1`.
+- `404 page not found` on `/api/image/generate`: set `CUSTOM_IMAGE_URL=https://host/v1` so the script calls `/v1/images/generations`.
 - Missing credentials in a non-interactive run: set environment variables or run `--configure` in a terminal.
 - `openai SDK is not installed`: run `python -m pip install openai`.
 - Existing output path: pass `--force` or choose a new filename.

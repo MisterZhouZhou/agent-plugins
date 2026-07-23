@@ -2,12 +2,12 @@
 """Generate an image with gpt-image-2 through an OpenAI-compatible Image API.
 
 Credential resolution order:
-1. Environment variables (OPENAI_API_KEY, OPENAI_BASE_URL/CUSTOM_IMAGE_URL)
-2. Local config: ~/.codex/api-generate-image/config.json
+1. Environment variables (OPENAI_API_KEY, CUSTOM_IMAGE_URL)
+2. Shared agent config: ~/.agents/api-generate-image/config.json
 3. Interactive prompt with opt-in persistence
 
-When neither CUSTOM_IMAGE_URL nor OPENAI_BASE_URL is set, the official
-OpenAI API (https://api.openai.com/v1) is used by default.
+When CUSTOM_IMAGE_URL is not set, the official OpenAI API
+(https://api.openai.com/v1) is used by default.
 
 The script never prints API keys.
 """
@@ -26,8 +26,9 @@ from typing import Any, Optional, Tuple
 from urllib.parse import urlparse, urlunparse
 from urllib.request import Request, urlopen
 
-CONFIG_DIR = Path.home() / ".codex" / "api-generate-image"
+CONFIG_DIR = Path.home() / ".agents" / "api-generate-image"
 CONFIG_PATH = CONFIG_DIR / "config.json"
+CONFIG_KEYS = ("OPENAI_API_KEY", "CUSTOM_IMAGE_URL")
 
 
 def die(message: str, code: int = 1) -> None:
@@ -50,8 +51,14 @@ def read_config(path: Path = CONFIG_PATH) -> dict[str, str]:
     if not isinstance(data, dict):
         warn(f"Config file {path} is not a JSON object; ignoring it.")
         return {}
+    legacy_base_url = data.get("OPENAI_BASE_URL")
+    if isinstance(legacy_base_url, str) and legacy_base_url.strip():
+        die(
+            f"配置文件 {path} 包含已弃用的 OPENAI_BASE_URL。"
+            "请将该字段改为 CUSTOM_IMAGE_URL。"
+        )
     result: dict[str, str] = {}
-    for key in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "CUSTOM_IMAGE_URL"):
+    for key in CONFIG_KEYS:
         value = data.get(key)
         if isinstance(value, str) and value.strip():
             result[key] = value.strip()
@@ -60,7 +67,7 @@ def read_config(path: Path = CONFIG_PATH) -> dict[str, str]:
 
 def write_config(values: dict[str, str], path: Path = CONFIG_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {k: v for k, v in values.items() if v}
+    payload = {key: values[key] for key in CONFIG_KEYS if values.get(key)}
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     try:
         path.chmod(stat.S_IRUSR | stat.S_IWUSR)
@@ -95,9 +102,10 @@ def prompt_for_config(existing: dict[str, str], *, persist_complete_noninteracti
 
     if not sys.stdin.isatty():
         die(
-            "Missing OPENAI_API_KEY, and interactive input is unavailable. "
-            "Run with --configure in an interactive terminal, set the environment variable, "
-            f"or create {CONFIG_PATH}."
+            "未找到 OPENAI_API_KEY，且当前环境无法交互输入。请任选一种方式配置：\n"
+            "  1. 设置环境变量：export OPENAI_API_KEY='你的密钥'\n"
+            f"  2. 创建共享配置文件：{CONFIG_PATH}\n"
+            "  3. 在交互式终端运行：python scripts/generate_image.py --configure"
         )
 
     print("api-generate-image needs API configuration.", file=sys.stderr)
@@ -109,35 +117,41 @@ def prompt_for_config(existing: dict[str, str], *, persist_complete_noninteracti
             die("OPENAI_API_KEY is required.")
         values["OPENAI_API_KEY"] = key
 
-    if not (values.get("OPENAI_BASE_URL") or values.get("CUSTOM_IMAGE_URL")):
-        endpoint = input("CUSTOM_IMAGE_URL or OPENAI_BASE_URL (leave blank for official OpenAI API): ").strip()
+    if not values.get("CUSTOM_IMAGE_URL"):
+        endpoint = input("CUSTOM_IMAGE_URL (leave blank for official OpenAI API): ").strip()
         if endpoint:
-            if endpoint.rstrip("/").endswith("/v1") or "/v1/" in endpoint:
-                values["OPENAI_BASE_URL"] = endpoint
-            else:
-                values["CUSTOM_IMAGE_URL"] = endpoint
+            values["CUSTOM_IMAGE_URL"] = endpoint
 
     if prompt_yes_no("Persist these values for future api-generate-image runs?", default=True):
         write_config(values)
     return values
 
 
-def resolve_settings(args: argparse.Namespace) -> Tuple[str, Optional[str], Optional[str], str, str]:
-    config = read_config()
+def resolve_settings(args: argparse.Namespace) -> Tuple[str, Optional[str], str, str]:
+    legacy_base_url = os.getenv("OPENAI_BASE_URL")
+    if legacy_base_url and legacy_base_url.strip():
+        die(
+            "检测到已弃用的环境变量 OPENAI_BASE_URL。"
+            "请改用 CUSTOM_IMAGE_URL。"
+        )
 
-    key = os.getenv("OPENAI_API_KEY") or config.get("OPENAI_API_KEY")
-    explicit_base_url = args.base_url or os.getenv("OPENAI_BASE_URL") or config.get("OPENAI_BASE_URL")
-    custom_image_url = os.getenv("CUSTOM_IMAGE_URL") or config.get("CUSTOM_IMAGE_URL")
+    config = read_config(CONFIG_PATH)
+
+    env_key = os.getenv("OPENAI_API_KEY")
+    key = env_key or config.get("OPENAI_API_KEY")
+    custom_image_url = (
+        args.custom_image_url
+        or os.getenv("CUSTOM_IMAGE_URL")
+        or config.get("CUSTOM_IMAGE_URL")
+    )
 
     if args.configure:
         updated = prompt_for_config({k: v for k, v in {
             "OPENAI_API_KEY": key,
-            "OPENAI_BASE_URL": explicit_base_url,
             "CUSTOM_IMAGE_URL": custom_image_url,
         }.items() if v}, persist_complete_noninteractive=True)
         key = updated.get("OPENAI_API_KEY")
-        explicit_base_url = args.base_url or updated.get("OPENAI_BASE_URL")
-        custom_image_url = updated.get("CUSTOM_IMAGE_URL")
+        custom_image_url = args.custom_image_url or updated.get("CUSTOM_IMAGE_URL")
 
     missing = []
     if not key:
@@ -145,20 +159,21 @@ def resolve_settings(args: argparse.Namespace) -> Tuple[str, Optional[str], Opti
     if missing:
         updated = prompt_for_config({})
         key = key or updated.get("OPENAI_API_KEY")
-        explicit_base_url = explicit_base_url or updated.get("OPENAI_BASE_URL")
         custom_image_url = custom_image_url or updated.get("CUSTOM_IMAGE_URL")
 
     if not key:
         die("OPENAI_API_KEY is not set.")
-    base_url = derive_base_url(custom_image_url, explicit_base_url)
-    source = "environment" if os.getenv("OPENAI_API_KEY") else "codex-config"
-    return key, custom_image_url, explicit_base_url, base_url, source
+    base_url = derive_base_url(custom_image_url)
+    if env_key:
+        source = "environment"
+    elif config.get("OPENAI_API_KEY"):
+        source = "agents-config"
+    else:
+        source = "interactive"
+    return key, custom_image_url, base_url, source
 
 
-def derive_base_url(custom_image_url: Optional[str], explicit_base_url: Optional[str]) -> str:
-    if explicit_base_url:
-        return explicit_base_url.rstrip("/")
-
+def derive_base_url(custom_image_url: Optional[str]) -> str:
     if not custom_image_url:
         # Default to official OpenAI API
         return "https://api.openai.com/v1"
@@ -227,14 +242,14 @@ def main() -> int:
     parser.add_argument("--size", default="1536x1024")
     parser.add_argument("--quality", default="high")
     parser.add_argument("--output-format", default="png")
-    parser.add_argument("--base-url", help="Override OPENAI_BASE_URL/CUSTOM_IMAGE_URL derivation")
-    parser.add_argument("--configure", action="store_true", help="Prompt for missing API settings and save them under ~/.codex/api-generate-image/config.json")
+    parser.add_argument("--custom-image-url", help="Override CUSTOM_IMAGE_URL")
+    parser.add_argument("--configure", action="store_true", help="Prompt for missing API settings and save them under ~/.agents/api-generate-image/config.json")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     prompt = read_prompt(args)
-    key, _custom_image_url, _explicit_base_url, base_url, config_source = resolve_settings(args)
+    key, _custom_image_url, base_url, config_source = resolve_settings(args)
 
     if args.configure and prompt == "configuration only":
         print("Configuration complete.")
