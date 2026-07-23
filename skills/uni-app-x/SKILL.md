@@ -43,12 +43,14 @@ Choose the smallest relevant reference file before editing code:
    - Load `references/vue/component.md` for easycom, ref types, calling child methods, and defineExpose.
    - Load `references/vue/composition-api.md` for reactive core (ref, reactive, computed generic types, watch).
    - Load `references/vue/data-bind-modifier.md` for event modifiers (.stop, .prevent, etc.) and v-model modifiers.
+   - Load `references/guides/development/bidirectional-cascade-scroll.md` for linked navigation/content scrolling, active Tab visibility, section measurement, and HarmonyOS `scrollOffset` compatibility.
    - Load `references/core/lifecycle.md` for page lifecycle order and composition API lifecycle hooks.
    - Load `references/core/app.md` for App.uvue lifecycle, globalData, and global methods.
    - Use `.uvue` for pages and components unless the existing project clearly uses another supported convention.
 
 4. **UCSS and layout**
    - Load `references/guides/development/ucss-layout.md` for App-safe CSS rules, flex layout, rpx, selector limits, and supported properties.
+   - Load `references/guides/development/harmony-landscape-safe-area.md` when a fixed-landscape HarmonyOS page has status-bar/safe-area errors, stale portrait-oriented window values, incorrect responsive width, or a cold-start half-screen layout that recovers after interaction.
    - Load `references/css/ucss.md` for UCSS constraints summary (flex/absolute only, no style inheritance, text styles on text element, page scroll behavior).
    - Load `references/css/font-family.md` for `font-family`, `@font-face`, custom font formats, `uni-icon`, and App/HarmonyOS font differences.
    - Design layouts with flex and absolute positioning because App rendering supports a web-CSS subset.
@@ -91,6 +93,7 @@ Choose the smallest relevant reference file before editing code:
 
 8. **UI features and interactions**
    - Load `references/features/list-scroll.md` for scroll-view vs list-view, sticky headers, pull-down refresh, and long list optimization.
+   - Load `references/guides/development/bidirectional-cascade-scroll.md` when navigation Tabs and content sections must drive each other, or when H5 linkage works but HarmonyOS does not.
    - Load `references/features/form.md` for form submit/reset, input/checkbox/radio/switch/slider usage.
    - Load `references/features/dom.md` for DOM API, UniElement, getElementById, and ref usage.
    - Load `references/features/idref.md` for id vs ref, component ref types, and dialogPage element access.
@@ -273,6 +276,7 @@ Choose the smallest relevant reference file before editing code:
 
 ### UCSS / Styling
 - `references/guides/development/ucss-layout.md` - UCSS layout and styling constraints (English, with property list)
+- `references/guides/development/harmony-landscape-safe-area.md` - HarmonyOS fixed-landscape safe areas, stale portrait coordinates, and cold-start half-screen recovery
 - `references/css/ucss.md` - UCSS constraints summary (Chinese)
 - `references/css/font-family.md` - font-family, @font-face, custom font formats, uni-icon, and platform differences
 - `references/features/theme-dark.md` - dark theme, theme.json, uni.setAppTheme
@@ -308,6 +312,7 @@ Choose the smallest relevant reference file before editing code:
 
 ### UI Features
 - `references/features/list-scroll.md` - scroll-view vs list-view, sticky headers, pull-down refresh
+- `references/guides/development/bidirectional-cascade-scroll.md` - bidirectional navigation/content linkage, active Tab auto-scroll, and HarmonyOS-safe section measurement
 - `references/features/form.md` - form submit/reset, input/checkbox/radio/switch/slider
 - `references/features/dom.md` - DOM API, UniElement, getElementById, ref
 - `references/features/idref.md` - id vs ref, component ref types, dialogPage element access
