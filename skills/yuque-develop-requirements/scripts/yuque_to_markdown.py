@@ -8,12 +8,13 @@ import sys
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 from urllib import error, parse, request
 
 
 DEFAULT_API_BASE = "https://www.yuque.com/api/v2"
 DEFAULT_USER_AGENT = "AI-Data-Extractor"
+CONFIG_PATH = Path.home() / ".agents" / "yuque-develop-requirements" / "config.json"
 YUQUE_URL_RE = re.compile(
     r"^https?://(?:[^/]+\.)?yuque\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/(?P<doc>[^/?#]+)"
 )
@@ -151,7 +152,14 @@ def parse_args() -> argparse.Namespace:
         help="Yuque repo namespace in the format owner/repo.",
     )
     parser.add_argument("--doc-slug", help="Yuque document slug.")
-    parser.add_argument("--token", help="Yuque token. Defaults to YUQUE_TOKEN.")
+    parser.add_argument(
+        "--token",
+        help="Yuque token. Used when no configured token is available.",
+    )
+    parser.add_argument(
+        "--token-key",
+        help="Token key in the agent config file, for example cyp or beijing-myye7.",
+    )
     parser.add_argument(
         "--api-base",
         default=DEFAULT_API_BASE,
@@ -208,10 +216,71 @@ def resolve_document_identity(args: argparse.Namespace) -> Tuple[str, str]:
     return repo_namespace, doc_slug
 
 
-def resolve_token(args: argparse.Namespace) -> str:
-    token = args.token or os.environ.get("YUQUE_TOKEN")
+def load_token_config() -> Tuple[Dict[str, str], Optional[Path]]:
+    if not CONFIG_PATH.exists():
+        return {}, None
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid Yuque token config JSON: {CONFIG_PATH}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit(f"Invalid Yuque token config: {CONFIG_PATH} must contain a JSON object.")
+    for key, value in data.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise SystemExit(
+                f"Invalid Yuque token config: {CONFIG_PATH} must be a simple object of string keys and string tokens."
+            )
+    return data, CONFIG_PATH
+
+
+def get_string(config: Dict[str, str], key: str) -> Optional[str]:
+    value = config.get(key)
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def get_config_token(
+    config: Dict[str, str],
+    config_path: Optional[Path],
+    token_key: Optional[str],
+    repo_namespace: str,
+) -> Optional[str]:
+    if not config:
+        return None
+
+    if token_key:
+        token = get_string(config, token_key)
+        if token:
+            return token
+        available = ", ".join(sorted(config.keys())) or "none"
+        raise SystemExit(
+            f"Token key '{token_key}' was not found in {config_path}. Available keys: {available}."
+        )
+
+    repo_owner = repo_namespace.split("/", 1)[0]
+    token = get_string(config, repo_owner)
+    if token:
+        return token
+
+    if len(config) == 1:
+        value = next(iter(config.values())).strip()
+        if value:
+            return value
+
+    return None
+
+
+def resolve_token(args: argparse.Namespace, repo_namespace: str) -> str:
+    config, config_path = load_token_config()
+    token = (
+        get_config_token(config, config_path, args.token_key, repo_namespace)
+        or args.token
+        or os.environ.get("YUQUE_TOKEN")
+    )
     if not token:
-        raise SystemExit("Missing Yuque token. Provide --token or set YUQUE_TOKEN.")
+        raise SystemExit(
+            "Missing Yuque token. Provide --token, configure "
+            f"{CONFIG_PATH}, or set YUQUE_TOKEN."
+        )
     return token
 
 
@@ -343,7 +412,7 @@ def write_output(
 def main() -> None:
     args = parse_args()
     repo_namespace, doc_slug = resolve_document_identity(args)
-    token = resolve_token(args)
+    token = resolve_token(args, repo_namespace)
     data = fetch_yuque_document(
         api_base=args.api_base,
         repo_namespace=repo_namespace,

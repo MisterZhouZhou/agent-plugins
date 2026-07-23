@@ -16,6 +16,26 @@ curl -X GET "https://www.yuque.com/api/v2/repos/owner/repo/docs/doc-slug?raw=1" 
   -H "User-Agent: AI-Data-Extractor"
 ```
 
+## Token config
+
+The fetch script reads tokens in this order:
+
+1. `~/.agents/yuque-develop-requirements/config.json`
+2. `--token`
+3. `YUQUE_TOKEN`
+
+Automatic token matching only uses the Yuque URL owner segment. For example,
+`https://souche.yuque.com/cyp/heh0hl/doc-slug` matches the top-level `cyp` key.
+
+Config example:
+
+```json
+{
+  "cyp": "YOUR_CYP_TOKEN",
+  "beijing-myye7": "YOUR_BEIJING_MYYE7_TOKEN"
+}
+```
+
 Document URLs used for parsing may be either:
 
 - `https://www.yuque.com/owner/repo/doc-slug`
