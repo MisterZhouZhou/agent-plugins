@@ -111,29 +111,62 @@ $memory-with-files 为当前项目初始化持久记忆，主题为“主题名�
 
 ### agent-notify
 
-将 Codex 的 `Stop` 和 `PermissionRequest` 事件转发为 macOS 原生桌面通知，回复完成或权限申请时立刻在系统通知中心提醒，点击通知激活发起任务的终端应用。
+将 Claude Code、Codex 和 OpenCode 的回合结束 / 权限申请事件转发为 macOS 原生桌面通知，点击通知可激活发起任务的终端应用。
 
-- `Stop`：当前回合结束，通知正文显示 `last_assistant_message` 摘要
-- `PermissionRequest`：Codex 正在等待用户授权
+- Claude Code：`Stop`、`Notification` + `permission_prompt`
+- Codex：`Stop`、`PermissionRequest`
+- OpenCode：`session.idle`、`permission.updated` / `permission.asked`
 - 通知按项目路径分组，新通知替换旧通知
-- 优先使用 `terminal-notifier`，未安装时降级到 `osascript` 弹窗
+- 优先使用 `terminal-notifier`，未安装时降级到 `osascript`
 - macOS 独占；建议先安装 `brew install terminal-notifier`
 
 #### 安装
+
+Claude Code：
+
+```bash
+/plugin marketplace add ~/Desktop/ai/agent-plugins
+/plugin install agent-notify@claude-agent-plugins
+```
+
+Codex：
 
 ```bash
 codex plugin marketplace add ~/Desktop/ai/agent-plugins
 codex plugin add agent-notify@codex-agent-plugins
 ```
 
-安装后打开 `/hooks` 审核并信任 `Stop` 和 `PermissionRequest` Hook，然后重新打开一个 Codex 会话。
+安装后打开 `/hooks` 审核并信任相关 Hook，然后重新打开会话。
+
+OpenCode：
+
+```bash
+~/Desktop/ai/agent-plugins/scripts/install-opencode.sh install --disable-legacy
+```
+
+脚本会把 `plugins/agent-notify/opencode/agent-notify.js` 软链接到 `~/.opencode/plugins/`。安装后完整退出并重启 OpenCode。
+
+状态检查 / 卸载：
+
+```bash
+~/Desktop/ai/agent-plugins/scripts/install-opencode.sh status
+~/Desktop/ai/agent-plugins/scripts/install-opencode.sh uninstall
+```
 
 #### 手动测试
 
 ```bash
+printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"Claude 通知验证"}' \
+  | python3 ~/Desktop/ai/agent-plugins/plugins/agent-notify/bin/agent-notify claude stop
+
 printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"Codex 通知验证"}' \
-  | python3 ~/.codex/plugins/agent-notify/bin/agent-notify codex stop
+  | python3 ~/Desktop/ai/agent-plugins/plugins/agent-notify/bin/agent-notify codex stop
+
+printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"OpenCode 通知验证"}' \
+  | python3 ~/Desktop/ai/agent-plugins/plugins/agent-notify/bin/agent-notify opencode stop
 ```
+
+更完整的说明见 `plugins/agent-notify/README.md`。
 
 ## Claude 插件市场
 
@@ -168,6 +201,12 @@ printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"Claude 通知验证"}'
 ```
 
 实际安装路径以 Claude Code 插件缓存位置为准。
+
+OpenCode 安装请使用仓库根目录脚本：
+
+```bash
+~/Desktop/ai/agent-plugins/scripts/install-opencode.sh install --disable-legacy
+```
 
 ### draw-skills
 

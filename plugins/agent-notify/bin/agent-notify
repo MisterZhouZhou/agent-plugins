@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Desktop notifications for Claude Code and Codex lifecycle hooks."""
+"""Desktop notifications for Claude Code, Codex, and OpenCode lifecycle hooks."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from urllib.parse import unquote, urlparse
 SOURCE_LABELS = {
     "claude": "Claude Code",
     "codex": "Codex",
+    "opencode": "OpenCode",
 }
 
 TERMINAL_BUNDLE_IDS = {
@@ -46,12 +47,13 @@ NOTIFICATIONS_ENABLED_FLAG = 0x02000000
 ICON_FILENAMES = {
     "claude": "claude.png",
     "codex": "codex.png",
+    "opencode": "opencode.png",
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Send macOS notifications from Claude Code and Codex hooks."
+        description="Send macOS notifications from Claude Code, Codex, and OpenCode hooks."
     )
     actions = parser.add_subparsers(dest="action", required=True)
     for source in SOURCE_LABELS:
@@ -64,6 +66,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_payload() -> dict[str, Any]:
+    raw = os.environ.get("AGENT_NOTIFY_PAYLOAD")
+    if isinstance(raw, str) and raw.strip():
+        try:
+            value = json.loads(raw)
+        except json.JSONDecodeError:
+            return {}
+        return value if isinstance(value, dict) else {}
+
     try:
         value = json.load(sys.stdin)
     except (json.JSONDecodeError, OSError):
@@ -322,7 +332,9 @@ if resultButton is "打开设置" then
     open location "x-apple.systempreferences:com.apple.Notifications-Settings.extension"
 end if
 end run
-"""
+    """
+            source_names = "、".join(SOURCE_LABELS.values())
+            script = script.replace("Claude Code 和 Codex", source_names)
             try:
                 subprocess.run(
                     ["/usr/bin/osascript", "-e", script, icon_argument],
