@@ -23,7 +23,7 @@
     ├── codex-session-export/
     ├── codex-session-import/
     ├── cold-water/
-    ├── dual-cli-plugin/
+    ├── agent-cli-skill/
     ├── electron-skills/
     ├── figma-rest-h2d-source/
     ├── geo-skill/

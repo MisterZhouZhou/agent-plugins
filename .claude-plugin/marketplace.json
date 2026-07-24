@@ -63,7 +63,7 @@
         "./skills/codex-session-import",
         "./skills/cold-water",
         "./skills/cdp-skill",
-        "./skills/dual-cli-plugin"
+        "./skills/agent-cli-skill"
       ]
     }
   ]

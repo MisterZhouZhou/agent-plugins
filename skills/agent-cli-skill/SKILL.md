@@ -1,13 +1,15 @@
 ---
-name: dual-cli-plugin
-description: Use when authoring, packaging, or maintaining a single plugin that must load in both Claude Code (`.claude-plugin`) and Codex (`.codex-plugin`) from the same directory, including hook-event mapping, shared binaries via `${CLAUDE_PLUGIN_ROOT}`/`${PLUGIN_ROOT}`, marketplace registration for both sides, and layered verification without duplicate hooks.
+name: claude-codex-cli-skill
+description: Use when authoring, packaging, or maintaining Claude Code and Codex CLI integrations, especially a single dual-CLI plugin, Codex custom subagents under `.codex/agents/` or `~/.codex/agents/`, parallel agent workflows, agent-specific models, memory, MCP tools, skills, sandbox controls, hook-event mapping, shared plugin assets, marketplace registration, and layered verification.
 ---
 
-# Dual-CLI Plugin (Claude Code + Codex)
+# Claude Codex CLI Skill
 
 ## Overview
 
 Package one plugin folder that both Claude Code and Codex load natively, without duplicating logic or assets. The two CLIs share event semantics (Stop, permission) but differ in event names, manifest schemas, hook-file discovery, and marketplace formats. This skill locks down the differences so a single directory works on both.
+
+It also covers Codex Subagent design: when to delegate, how to define project or personal custom agents, and how to give an agent scoped instructions, persistent external memory, MCP tools, skills, and sandbox permissions.
 
 **Core principle:** one plugin root, two manifests, two hooks files, two marketplace entries — never one hooks file trying to serve both. If a plugin only targets one CLI, skip this skill and use [[codex-plugin-marketplaces]] (Codex) or Claude's plugin docs directly.
 
@@ -17,11 +19,12 @@ Package one plugin folder that both Claude Code and Codex load natively, without
 - Users are expected to install from a marketplace, not run `curl | sh`.
 - The plugin ships an executable or asset (`bin/`, `assets/`) that should not be duplicated per CLI.
 - You are migrating an existing `install.sh`-style tool that writes to `~/.claude/settings.json` and `~/.codex/hooks.json`.
+- You are configuring Codex Subagents, custom agent TOML files, parallel review/exploration workflows, agent memory, MCP servers, skills, models, reasoning effort, or sandbox policies.
 
 Do not use for:
 
 - Plugins that only ship skills or commands (no hooks): a plain single-manifest plugin is enough.
-- CLI-specific behavior that has no counterpart on the other side (e.g., Codex `SubagentStart` with no Claude Code analog): keep it in a single-CLI plugin.
+- CLI-specific plugin behavior that has no counterpart on the other side: keep it in a single-CLI plugin. Codex Subagent configuration is a supported standalone use case; read [[codex-subagents.md]].
 
 ## Safety Boundary
 
@@ -64,7 +67,30 @@ If the user has an existing single-CLI plugin or a legacy `install.sh`, decide w
 | Adding second CLI to an existing single-CLI plugin | Add the missing `.{claude,codex}-plugin/plugin.json` and `hooks/*.json`; do not rename the first |
 | Users see duplicate notifications | Legacy hooks still present -> run legacy uninstaller before verifying plugin |
 
-Read [[manifest-shapes.md]] before authoring manifests. Read [[hook-events.md]] before writing hooks. Read [[verification.md]] before claiming the plugin works.
+Read [[manifest-shapes.md]] before authoring manifests. Read [[hooks-and-events.md]] before writing hooks. Read [[testing-and-verification.md]] before claiming the plugin works. For Subagent workflows or custom agents, read [[codex-subagents.md]] before editing `.codex/agents/`, `~/.codex/agents/`, or `[agents]` configuration.
+
+## Codex Subagent Phase
+
+Keep Subagent work separate from plugin packaging unless the plugin actually ships agent definitions. The key distinction is:
+
+- **Agent thread:** short-lived conversational and tool context for one spawned agent.
+- **Custom agent TOML:** stable role, model, reasoning effort, sandbox, MCP, and skill configuration.
+- **Persistent memory:** external files or a memory/knowledge MCP; a new thread does not automatically inherit closed-thread history.
+
+Start with read-heavy parallel work such as code exploration, security review, test-gap analysis, documentation checks, log triage, and summarization. Avoid parallel edits to overlapping files. When implementation is required, let parallel agents gather evidence first, then assign one owner to edit and validate.
+
+Use project-scoped agents in `.codex/agents/` when their knowledge or behavior belongs to the repository. Use personal agents in `~/.codex/agents/` only for reusable behavior across projects. Every custom agent must define `name`, `description`, and `developer_instructions`.
+
+For agent-specific memory and tools:
+
+1. Put stable behavior and invariants in `developer_instructions`.
+2. Put shared repository rules in `AGENTS.md` and agent-specific reviewed knowledge in `.codex/memory/<agent>.md`.
+3. Tell the agent exactly which memory files to read; merely creating a file does not load it.
+4. Use MCP servers for dynamic external tools or cross-session stores, and `skills.config` for reusable workflows.
+5. Enforce real access boundaries with `sandbox_mode`, MCP-side authorization, and approval policy. Prompt instructions alone are not a security boundary.
+6. Keep reviewer and explorer agents read-only. Do not let an agent autonomously persist guesses, secrets, personal data, raw logs, or transient failures as memory.
+
+See [[codex-subagents.md]] for schemas, precedence, examples, prompt templates, and verification.
 
 ## Repository Phase
 
@@ -126,7 +152,7 @@ Then run any plugin-specific unit tests. `claude plugin validate` only validates
 
 Repository validation must pass before touching global state. Then:
 
-1. Read [[verification.md]] and pick the layers appropriate for the change (usually L1–L4 for Claude, L5–L6 for Codex).
+1. Read [[testing-and-verification.md]] and pick the layers appropriate for the change (usually L1–L4 for Claude, L5–L6 for Codex).
 2. If users had a legacy `install.sh`, run the legacy uninstaller first to avoid duplicate hooks.
 3. Show every command that will run, its effect on global state, and ask for confirmation in a single message.
 4. Run approved commands, capture JSON output when available.
