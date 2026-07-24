@@ -1,6 +1,8 @@
 # Testing and Verification
 
-Layered testing plan for dual-CLI plugins. Run from cheapest to most realistic.
+Layered testing plan for Claude Code, Codex, and OpenCode plugins. Run from cheapest to most realistic.
+
+When the user only targets one CLI, run that CLI's layers only. Do not require the full multi-CLI matrix for a single-side change.
 
 ## Layer 1: Static validation
 
@@ -105,36 +107,94 @@ Inside Codex:
 
 If a hook content change ships later, users must re-trust — plan release notes accordingly.
 
-## Layer 7: Conflict detection
+## Layer 7: OpenCode adapter + install
 
-Both CLIs can have hooks registered from other sources: user-global settings, project-local configs, or prior installs of your own plugin's non-plugin form.
+OpenCode has no hooks JSON. Verify the JS/TS adapter and installer separately.
 
-Before shipping, check `/hooks` for duplicate entries pointing at old paths. Common cases:
+```bash
+node --check <plugin-root>/opencode/<adapter>.js
+python3 -m py_compile <plugin-root>/bin/<exec>   # if wrapping Python
+
+# Shared binary: stdin path
+AGENT_NOTIFY_DRY_RUN=1 AGENT_NOTIFY_ICON_DIR="<plugin-root>/assets" \
+  python3 "<plugin-root>/bin/<exec>" opencode stop \
+  <<< '{"cwd":"/tmp/demo","last_assistant_message":"dry-run"}'
+
+# Shared binary: env payload path used by Bun Shell adapter
+AGENT_NOTIFY_DRY_RUN=1 AGENT_NOTIFY_ICON_DIR="<plugin-root>/assets" \
+  AGENT_NOTIFY_PAYLOAD='{"cwd":"/tmp/demo","last_assistant_message":"env"}' \
+  python3 "<plugin-root>/bin/<exec>" opencode stop
+```
+
+Installer checks (prefer repo-root script):
+
+```bash
+scripts/install-opencode.sh status
+OPENCODE_PLUGIN_DIR=/tmp/opencode-plugin-test/plugins scripts/install-opencode.sh install
+OPENCODE_PLUGIN_DIR=/tmp/opencode-plugin-test/plugins scripts/install-opencode.sh uninstall
+```
+
+Confirm the installer:
+
+- creates a symlink to the adapter source
+- refuses unmanaged same-name files
+- only disables legacy notifiers with an explicit flag
+
+## Layer 8: OpenCode end-to-end
+
+```bash
+scripts/install-opencode.sh install --disable-legacy   # after user confirmation
+opencode --version
+opencode debug config    # plugin list includes the adapter once
+opencode debug info
+```
+
+Then fully quit and restart OpenCode (no hot reload).
+
+1. Successful short reply → exactly one completion toast (`session.idle`).
+2. Permission-ask project config → exactly one permission toast (`permission.updated` / `permission.asked`).
+3. Stream/model failures do not count as idle tests.
+
+If listed in debug config but silent:
+
+- re-check Bun Shell payload transport (env, not `.stdin(...)`)
+- inspect `~/.local/share/opencode/log/opencode.log`
+- ensure legacy `notification.ts` is disabled when testing uniqueness
+
+## Layer 9: Conflict detection
+
+CLIs can have hooks/plugins registered from other sources: user-global settings, project-local configs, prior installers, or leftover OpenCode adapters.
+
+Before shipping, check for duplicates:
 
 - Old `~/.local/bin/<name>` scripts left over from a pre-plugin installer.
 - Same plugin installed from two marketplaces with different names.
 - Project-local `.claude/settings.json` still injecting the same hook.
+- OpenCode: both `~/.opencode/plugins/` and `~/.config/opencode/plugins/` copies of the same adapter.
+- OpenCode: legacy `notification.ts` plus the new adapter.
 
 If your plugin previously shipped as a standalone installer, ship an "uninstall old form" instruction in the migration section of the README.
 
 ## Regression matrix
 
-Before releasing a dual-CLI plugin, run this matrix by hand or scripted:
+Before releasing a multi-CLI plugin, run this matrix by hand or scripted:
 
-| Scenario | Claude Code | Codex |
-|---|---|---|
-| Fresh install via marketplace | Layer 5 | Layer 6 |
-| Reload after edit | `/reload-plugins` | `codex plugin remove` + `add` |
-| Empty payload | Layer 2 with `{}` | Same |
-| Missing external tool (e.g. terminal-notifier) | Layer 3 with `PATH=""` | Same |
-| Very long payload | Layer 3 with 5KB message | Same |
-| Uninstall | `/plugin uninstall` | `codex plugin remove` |
-| Hook trust flow | (n/a) | Confirm `/hooks` review path |
+| Scenario | Claude Code | Codex | OpenCode |
+|---|---|---|---|
+| Fresh install | Layer 5 | Layer 6 | Layer 8 |
+| Reload after edit | `/reload-plugins` | `codex plugin remove` + `add` | full process restart |
+| Empty payload | Layer 2 with `{}` | Same | Same + env payload empty |
+| Missing external tool | Layer 3 with `PATH=""` | Same | Same |
+| Very long payload | Layer 3 with 5KB message | Same | Same |
+| Uninstall | `/plugin uninstall` | `codex plugin remove` | `scripts/install-opencode.sh uninstall` |
+| Hook/plugin trust flow | (n/a) | Confirm `/hooks` review path | Confirm debug config lists adapter once |
+| Legacy duplicate | legacy settings.json | legacy hooks.json | legacy `notification.ts` |
 
 ## Signals of a good release
 
 - `claude plugin validate` passes.
-- `/hooks` shows exactly the expected count of entries — no duplicates from stale installers.
-- Manual trigger produces a visible, correct effect (notification, log line, whatever) in both CLIs.
-- Uninstall via each CLI's UI removes the plugin without residual entries.
+- Claude/Codex `/hooks` shows exactly the expected count of entries — no duplicates from stale installers.
+- OpenCode `opencode debug config` lists the adapter once under the intended scope.
+- Manual trigger produces a visible, correct effect in every targeted CLI.
+- Uninstall removes only the managed install path without residual duplicates.
 - README uninstall commands verified against the same fresh state.

@@ -2,6 +2,8 @@
 
 Use this reference when designing parallel Subagent workflows or configuring custom Codex agents. Treat exact model names and config keys as version-sensitive; check the installed Codex documentation or configuration reference before relying on newly introduced values.
 
+This file is Codex-only. Do not load Claude/OpenCode plugin docs unless the user is also packaging multi-CLI plugins.
+
 ## Mental Model
 
 Codex separates orchestration, agent configuration, and memory:
