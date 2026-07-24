@@ -1,18 +1,31 @@
 ---
 name: agent-cli-skill
-description: Use when authoring or debugging Claude Code, Codex, or OpenCode CLI integrations—plugins, hooks/events, marketplace packaging, Claude Code MCP clients/servers (HTTP/SSE/stdio/WebSocket, scopes, OAuth, plugin MCP, Tool Search), OpenCode JS plugins (session.idle, permission.updated/asked, Bun Shell), OpenCode custom tools, MCP, LSP, and ACP, Codex MCP server, SDK, app-server, subagents, skills packaging, agent-notify, or multi-CLI verification. Prefer this skill whenever the user mentions any of those CLI agent runtimes, even if they only name one of them.
+description: Use when authoring or debugging Claude Code, Codex, or OpenCode CLI integrations—plugins, hooks/events, marketplace packaging, MCP, subagents/agents, skills, Codex SDK/app-server, OpenCode tools/LSP/ACP, agent-notify, or multi-CLI verification. For bare "subagent(s)" / "创建 subagent" with no CLI named, load all three subagent refs (claude+codex+opencode); only narrow to one CLI when the user names Claude/Codex/OpenCode. Prefer this skill over single-CLI config skills for cross-CLI agent questions.
 ---
 
 # Agent CLI Skill
 
-Route first. Load only the reference docs for the CLI the user is asking about.
+Route first. Prefer the smallest reference set that answers the question.
+**Exception:** bare “subagents / agents” with no CLI named → load **all three** subagent refs.
 
 ## Hard rule
 
-1. Classify the target CLI(s).
-2. Read **only** the matching files under `references/`.
+1. Classify the target CLI(s). If the user names Claude / Codex / OpenCode (or clear path/keyword signals), lock to that CLI.
+2. Read **only** the matching files under `references/` — except the subagent multi-load rule below.
 3. Do **not** open every reference by default.
 4. Read `shared/*` only for cross-CLI comparison, shared `bin/assets`, or multi-CLI packaging.
+
+## Subagents routing (priority)
+
+| User says | Read |
+|---|---|
+| Claude / Claude Code / `.claude/agents` / Agent tool / `/subtask` | **only** `references/claude/subagents.md` |
+| Codex / `.codex/agents` / `agents.toml` / `developer_instructions` | **only** `references/codex/subagents.md` |
+| OpenCode / `.opencode/agent` / `opencode agent` / mode:subagent | **only** `references/opencode/subagents.md` |
+| Two or three CLIs named | the matching subagent files for each named CLI |
+| Bare `subagent(s)` / `如何创建 subagent` / no CLI named | **all three**: `claude/subagents.md` + `codex/subagents.md` + `opencode/subagents.md` |
+
+When loading all three, answer with a short comparison (paths, format, mode) then per-CLI details. Do **not** fall back to `customize-opencode` or any single-CLI built-in for bare subagent questions.
 
 ## Router
 
@@ -22,10 +35,11 @@ Route first. Load only the reference docs for the CLI the user is asking about.
 | Claude hooks / Stop / Notification | `references/claude/hooks.md` |
 | Claude skills packaging inside a plugin | `references/claude/skills.md` |
 | Claude MCP client/server (`claude mcp`, `.mcp.json`, OAuth, Tool Search) | `references/claude/mcp.md` |
+| Claude subagents (CLI named) | `references/claude/subagents.md` |
 | Codex plugin / marketplace / manifest | `references/codex/plugins.md` |
 | Codex hooks / PermissionRequest / trust | `references/codex/hooks.md` |
 | Codex skills packaging | `references/codex/skills.md` |
-| Codex subagents / `.codex/agents` | `references/codex/subagents.md` |
+| Codex subagents (CLI named) | `references/codex/subagents.md` |
 | Codex as MCP server (`codex mcp-server`, Agents SDK) | `references/codex/mcp-server.md` |
 | Codex SDK (`@openai/codex-sdk`, `openai-codex`) | `references/codex/sdk.md` |
 | Codex app-server (JSON-RPC, VS Code, remote TUI) | `references/codex/app-server.md` |
@@ -33,13 +47,14 @@ Route first. Load only the reference docs for the CLI the user is asking about.
 | OpenCode events / Bun Shell / adapter | `references/opencode/events.md` |
 | OpenCode installer script | `references/opencode/install.md` |
 | OpenCode custom tools (`.opencode/tools`) | `references/opencode/tools.md` |
+| OpenCode subagents / agents (CLI named) | `references/opencode/subagents.md` |
 | OpenCode ACP / editor embed (`opencode acp`, Zed, JetBrains, nvim) | `references/opencode/acp.md` |
 | OpenCode MCP servers (local/remote, OAuth, tools globs) | `references/opencode/mcp.md` |
 | OpenCode LSP servers (diagnostics, enable/disable, custom LSP) | `references/opencode/lsp.md` |
 | Event mapping across CLIs / shared assets / agent-notify multi-CLI | `references/shared/lifecycle.md` |
 | How to verify / test | `references/shared/testing.md` (+ the target CLI file if needed) |
 
-If intent is ambiguous, ask one clarifying question **or** read only `shared/lifecycle.md`. Do not preload all three CLI trees.
+If intent is ambiguous **and not a subagent question**, ask one clarifying question **or** read only `shared/lifecycle.md`. Do not preload all three CLI trees for non-subagent topics.
 
 ## Core principles
 
@@ -100,13 +115,16 @@ Then read only the CLI-specific files for the side you are implementing.
 |---|---|
 | hook / Stop / PermissionRequest | Claude or Codex hooks file (ask if unclear) |
 | `claude mcp` / `.mcp.json` / Tool Search / Claude connectors | Claude MCP |
+| `.claude/agents` / Agent tool / `/subtask` / Explore agent | Claude subagents only |
 | session.idle / permission.updated / Bun | OpenCode events |
 | `.opencode/tools` / custom tool / `tool()` | OpenCode tools |
+| `.opencode/agent` / `mode: subagent` / `opencode agent` | OpenCode subagents only |
 | ACP / `opencode acp` / Zed agent_servers | OpenCode ACP |
 | MCP / `opencode mcp` / context7 / remote MCP | OpenCode MCP |
 | LSP / language server / pyright / gopls | OpenCode LSP |
 | marketplace / plugin.json | Claude or Codex plugins |
-| agents.toml / subagent / developer_instructions | Codex subagents |
+| agents.toml / `.codex/agents` / developer_instructions | Codex subagents only |
+| bare `subagent` / `subagents` / 创建 subagent (no CLI named) | **all three** subagent refs (see Subagents routing) |
 | `codex mcp-server` / codex-reply / Agents SDK MCP | Codex MCP server |
 | `@openai/codex-sdk` / `openai-codex` / resumeThread | Codex SDK |
 | `codex app-server` / thread/start / turn/start | Codex app-server |
