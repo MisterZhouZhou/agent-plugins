@@ -1,6 +1,6 @@
 ---
 name: agent-cli-skill
-description: Use when authoring or debugging Claude Code, Codex, or OpenCode CLI integrations—plugins, hooks/events, marketplace packaging, MCP, subagents/agents, skills, Codex SDK/app-server, OpenCode tools/LSP/ACP, agent-notify, or multi-CLI verification. For bare "subagent(s)" / "创建 subagent" with no CLI named, load all three subagent refs (claude+codex+opencode); only narrow to one CLI when the user names Claude/Codex/OpenCode. Prefer this skill over single-CLI config skills for cross-CLI agent questions.
+description: Use when authoring or debugging Claude Code, Codex, or OpenCode CLI integrations—plugins, hooks/events, marketplace packaging, MCP, subagents/agents, skills, Claude Agent SDK, Codex SDK/GitHub Action/app-server, OpenCode SDK/server/plugins/tools/LSP/ACP/models/permissions, agent-notify, or multi-CLI verification. For bare "subagent(s)" / "创建 subagent" with no CLI named, load all three subagent refs (claude+codex+opencode); only narrow to one CLI when the user names Claude/Codex/OpenCode. Prefer this skill over single-CLI config skills for cross-CLI agent questions.
 ---
 
 # Agent CLI Skill
@@ -19,6 +19,9 @@ Route first. Prefer the smallest reference set that answers the question.
 
 | User says | Read |
 |---|---|
+| Claude Agent SDK TypeScript / `@anthropic-ai/claude-agent-sdk` / TypeScript `Options.agents` | **only** `references/claude/agent-sdk-typescript.md` |
+| Claude Agent SDK Python / `claude_agent_sdk` / `ClaudeSDKClient` / Python `ClaudeAgentOptions.agents` | **only** `references/claude/agent-sdk-python.md` |
+| Claude Agent SDK general / language not specified / programmatic subagents / `parent_tool_use_id` | **only** `references/claude/agent-sdk.md` |
 | Claude / Claude Code / `.claude/agents` / Agent tool / `/subtask` | **only** `references/claude/subagents.md` |
 | Codex / `.codex/agents` / `agents.toml` / `developer_instructions` | **only** `references/codex/subagents.md` |
 | OpenCode / `.opencode/agent` / `opencode agent` / mode:subagent | **only** `references/opencode/subagents.md` |
@@ -36,18 +39,29 @@ When loading all three, answer with a short comparison (paths, format, mode) the
 | Claude skills packaging inside a plugin | `references/claude/skills.md` |
 | Claude MCP client/server (`claude mcp`, `.mcp.json`, OAuth, Tool Search) | `references/claude/mcp.md` |
 | Claude subagents (CLI named) | `references/claude/subagents.md` |
+| Claude Agent SDK overview/common concepts (language comparison, built-in tools, sessions, hooks, SDK subagents/MCP) | `references/claude/agent-sdk.md` |
+| Claude Agent SDK Python API (`ClaudeAgentOptions`, `ClaudeSDKClient`, messages, custom tools, hooks, sandbox) | `references/claude/agent-sdk-python.md` |
+| Claude Agent SDK TypeScript API (`Options`, `Query`, messages, custom tools, sessions, sandbox) | `references/claude/agent-sdk-typescript.md` |
 | Codex plugin / marketplace / manifest | `references/codex/plugins.md` |
 | Codex hooks / PermissionRequest / trust | `references/codex/hooks.md` |
 | Codex skills packaging | `references/codex/skills.md` |
 | Codex subagents (CLI named) | `references/codex/subagents.md` |
 | Codex as MCP server (`codex mcp-server`, Agents SDK) | `references/codex/mcp-server.md` |
-| Codex SDK (`@openai/codex-sdk`, `openai-codex`) | `references/codex/sdk.md` |
+| Codex SDK (TypeScript/Python, `@openai/codex-sdk`, `openai-codex`, threads, sandbox) | `references/codex/sdk.md` |
+| Codex GitHub Action / CI (`openai/codex-action@v1`, PR review, permission profile, safety strategy) | `references/codex/github-action.md` |
 | Codex app-server (JSON-RPC, VS Code, remote TUI) | `references/codex/app-server.md` |
 | OpenCode plugin load paths / install | `references/opencode/plugins.md` |
 | OpenCode events / Bun Shell / adapter | `references/opencode/events.md` |
+| OpenCode conversation content / history / notification text | `references/opencode/conversation.md` |
+| OpenCode JS/TS SDK (`@opencode-ai/sdk`, server/client, sessions, structured output) | `references/opencode/sdk.md` |
+| OpenCode HTTP server (`opencode serve`, OpenAPI `/doc`, REST/SSE, TUI control) | `references/opencode/server.md` |
 | OpenCode installer script | `references/opencode/install.md` |
 | OpenCode custom tools (`.opencode/tools`) | `references/opencode/tools.md` |
+| OpenCode agent skills / `SKILL.md` discovery / skill permissions | `references/opencode/skills.md` |
+| OpenCode providers / models / variants / reasoning options / `/models` / relay 403 / Responses API / User-Agent | `references/opencode/models.md` |
+| OpenCode permissions / approvals / `--auto` / `external_directory` / `doom_loop` | `references/opencode/permissions.md` |
 | OpenCode subagents / agents (CLI named) | `references/opencode/subagents.md` |
+| OpenCode per-agent permissions | `references/opencode/subagents.md` + `references/opencode/permissions.md` |
 | OpenCode ACP / editor embed (`opencode acp`, Zed, JetBrains, nvim) | `references/opencode/acp.md` |
 | OpenCode MCP servers (local/remote, OAuth, tools globs) | `references/opencode/mcp.md` |
 | OpenCode LSP servers (diagnostics, enable/disable, custom LSP) | `references/opencode/lsp.md` |
@@ -116,8 +130,15 @@ Then read only the CLI-specific files for the side you are implementing.
 | hook / Stop / PermissionRequest | Claude or Codex hooks file (ask if unclear) |
 | `claude mcp` / `.mcp.json` / Tool Search / Claude connectors | Claude MCP |
 | `.claude/agents` / Agent tool / `/subtask` / Explore agent | Claude subagents only |
+| `claude_agent_sdk` / `ClaudeAgentOptions` / `ClaudeSDKClient` / `create_sdk_mcp_server` / `allowed_tools` / `setting_sources` / `strict_mcp_config` | Claude Agent SDK Python |
+| `@anthropic-ai/claude-agent-sdk` / `startup()` / `WarmQuery` / `createSdkMcpServer` / `resolveSettings` / `applyFlagSettings` / `SDKMessage` / `SandboxSettings` / `pathToClaudeCodeExecutable` | Claude Agent SDK TypeScript |
 | session.idle / permission.updated / Bun | OpenCode events |
 | `.opencode/tools` / custom tool / `tool()` | OpenCode tools |
+| `@opencode-ai/sdk` / `createOpencode` / `createOpencodeClient` / `session.prompt` / structured output | OpenCode SDK |
+| `opencode serve` / `--cors` / `OPENCODE_SERVER_PASSWORD` / `/doc` / REST / SSE / `/tui/control` | OpenCode server |
+| `.opencode/skills` / `.agents/skills` / `SKILL.md` / `skill({ name })` / skill permissions | OpenCode skills |
+| `/models` / `/connect` / provider/model / variants / `reasoningEffort` / relay / `/responses` / `/chat/completions` / 403 / User-Agent | OpenCode models |
+| `permission` / `--auto` / auto-approve / allow-ask-deny / `external_directory` / `doom_loop` | OpenCode permissions |
 | `.opencode/agent` / `mode: subagent` / `opencode agent` | OpenCode subagents only |
 | ACP / `opencode acp` / Zed agent_servers | OpenCode ACP |
 | MCP / `opencode mcp` / context7 / remote MCP | OpenCode MCP |
@@ -126,6 +147,7 @@ Then read only the CLI-specific files for the side you are implementing.
 | agents.toml / `.codex/agents` / developer_instructions | Codex subagents only |
 | bare `subagent` / `subagents` / 创建 subagent (no CLI named) | **all three** subagent refs (see Subagents routing) |
 | `codex mcp-server` / codex-reply / Agents SDK MCP | Codex MCP server |
-| `@openai/codex-sdk` / `openai-codex` / resumeThread | Codex SDK |
+| `@openai/codex-sdk` / `openai-codex` / `resumeThread` / `AsyncCodex` / `CodexConfig` / `Sandbox.workspace_write` / `final_response` | Codex SDK |
+| `openai/codex-action` / `codex-action@v1` / `safety-strategy` / `permission-profile` / `final-message` / `allow-users` / `allow-bots` / `allow-bot-users` | Codex GitHub Action |
 | `codex app-server` / thread/start / turn/start | Codex app-server |
 | agent-notify | shared lifecycle + each targeted CLI |

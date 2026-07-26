@@ -72,7 +72,7 @@ Body = system prompt. Do not also put `prompt:` in frontmatter.
 |---|---|
 | `description` | Required. When to use this agent |
 | `mode` | `primary` \| `subagent` \| `all` (default `all`) |
-| `model` | `provider/model-id`; primary falls back to global model; subagent falls back to invoking primary |
+| `model` | `provider/model-id`; primary falls back to global model; subagent falls back to invoking primary. For providers, model options, and variants, read `models.md` |
 | `prompt` | System prompt (JSON) or markdown body (file form) |
 | `permission` | Per-tool `allow` / `ask` / `deny`; overrides top-level |
 | `temperature` / `top_p` | Sampling controls |
@@ -81,7 +81,7 @@ Body = system prompt. Do not also put `prompt:` in frontmatter.
 | `color` | UI color (hex or theme token) |
 | `disable` | `true` to disable |
 
-`tools` is **deprecated**; use `permission` instead.
+`tools` is **deprecated**; use `permission` instead. For granular matching, auto mode, external directories, defaults, and approval behavior, read `permissions.md`.
 
 ### Task permissions
 

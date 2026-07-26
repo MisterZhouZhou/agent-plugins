@@ -154,6 +154,18 @@ Then fully quit and restart OpenCode (no hot reload).
 1. Successful short reply → exactly one completion toast (`session.idle`).
 2. Permission-ask project config → exactly one permission toast (`permission.updated` / `permission.asked`).
 3. Stream/model failures do not count as idle tests.
+4. If the adapter queries conversation content, verify the session id and
+   message-history lookup separately; `session.idle` alone is not a transcript.
+5. Latest assistant failure → report that error; never fall back to an older
+   successful assistant reply.
+6. Deliver `message.part.updated` before `message.updated` → the current text is
+   still associated with the session and shown.
+7. Deliver text through `message.part.delta` only → the event-cache fallback
+   reconstructs the reply.
+8. First history query empty or failed → one bounded retry can recover; repeated
+   failure falls back without interrupting the session.
+9. `session.error` with no text → the completion notification shows the model
+   error; no text and no error → it shows an explicit no-content message.
 
 If listed in debug config but silent:
 

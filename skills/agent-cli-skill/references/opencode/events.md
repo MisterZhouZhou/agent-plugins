@@ -11,6 +11,28 @@
 | Session error | `session.error` | Optional error toast |
 | Tool before/after | `tool.execute.before` / `tool.execute.after` | |
 
+## Event catalog
+
+| Category | Events |
+|---|---|
+| Command | `command.executed` |
+| File | `file.edited`, `file.watcher.updated` |
+| Installation | `installation.updated` |
+| LSP | `lsp.client.diagnostics`, `lsp.updated` |
+| Message | `message.part.removed`, `message.part.updated`, `message.removed`, `message.updated` |
+| Permission | `permission.asked`, `permission.replied` |
+| Server | `server.connected` |
+| Session | `session.created`, `session.compacted`, `session.deleted`, `session.diff`, `session.error`, `session.idle`, `session.status`, `session.updated` |
+| Todo | `todo.updated` |
+| Shell | `shell.env` |
+| Tool | `tool.execute.after`, `tool.execute.before` |
+| TUI | `tui.prompt.append`, `tui.command.execute`, `tui.toast.show` |
+
+The generic `event` hook observes bus events. Direct hooks such as
+`tool.execute.before`, `tool.execute.after`, and `shell.env` expose mutable
+hook-specific input/output objects. Confirm payload types with the installed
+`@opencode-ai/plugin` package instead of inferring them from event names.
+
 ## Minimal event adapter
 
 ```js
