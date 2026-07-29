@@ -1,4 +1,4 @@
 interface:
   display_name: "Memory With Files"
-  short_description: "Persist project context without managing tasks"
-  default_prompt: "Use $memory-with-files to preserve this project's durable context under its root .memory directory; never use global Codex memories."
+  short_description: "主动维护项目本地高价值记忆"
+  default_prompt: "主动维护当前项目根目录 .memory 中的高价值记忆和恢复状态，但不要接管 planning-workflows 的任务清单或状态。"

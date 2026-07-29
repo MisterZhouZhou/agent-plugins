@@ -1,22 +1,22 @@
 {
   "name": "memory-with-files",
-  "version": "0.1.0+codex.20260717044749",
-  "description": "Persist durable project context in repo-local files without managing task status.",
+  "version": "0.2.0+codex.20260728060612",
+  "description": "Proactively preserve project-local durable memory and recoverable task state without managing the task plan.",
   "author": {
-    "name": "Claude HUD local"
+    "name": "MisterZhou"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "Memory With Files",
-    "shortDescription": "Durable project memory without task planning.",
-    "longDescription": "Stores decisions, findings, and handoff context under each project's .memory directory while Superpowers or OpenSpec remains authoritative for task status.",
-    "developerName": "Claude HUD local",
+    "shortDescription": "Proactive project-local durable memory.",
+    "longDescription": "Stores project rules, task decisions, findings, and handoff state under each project's .memory directory while planning-workflows remains authoritative for task steps and status.",
+    "developerName": "MisterZhou",
     "category": "Productivity",
     "capabilities": [
       "Interactive",
       "Read",
       "Write"
     ],
-    "defaultPrompt": "Use memory-with-files to preserve durable context for this project."
+    "defaultPrompt": "Proactively preserve high-value durable memory for this project without managing its task plan."
   }
 }

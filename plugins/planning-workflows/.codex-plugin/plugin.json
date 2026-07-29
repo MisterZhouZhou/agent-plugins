@@ -1,0 +1,37 @@
+{
+  "name": "planning-workflows",
+  "version": "0.2.0+codex.20260729163408",
+  "description": "Strict brainstorming, implementation planning, and systematic debugging workflows.",
+  "author": {
+    "name": "MisterZhou",
+    "email": "16619930394@163.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "brainstorming",
+    "planning",
+    "requirements",
+    "debugging",
+    "root-cause",
+    "investigation",
+    "workflow"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Planning Workflows",
+    "shortDescription": "Strict planning and systematic debugging workflows.",
+    "longDescription": "Routes new features through brainstorming, turns approved designs into detailed implementation plans, and investigates technical issues through systematic root-cause debugging. The plugin exposes no execution, TDD, review, worktree, or subagent workflows.",
+    "developerName": "MisterZhou",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "I have an idea for a feature I want to design.",
+      "Turn this approved design into an implementation plan.",
+      "Investigate this bug systematically before proposing a fix."
+    ]
+  }
+}

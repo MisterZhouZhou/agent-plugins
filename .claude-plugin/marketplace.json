@@ -17,6 +17,21 @@
       "category": "Productivity"
     },
     {
+      "name": "memory-with-files",
+      "description": "Proactive project-local memory with lifecycle restore and handoff reminders.",
+      "source": "./plugins/memory-with-files",
+      "strict": false,
+      "category": "Productivity"
+    },
+    {
+      "name": "planning-workflows",
+      "description": "Strict brainstorming, implementation planning, and systematic debugging workflows with SessionStart routing.",
+      "source": "./plugins/planning-workflows",
+      "strict": false,
+      "category": "Productivity",
+      "version": "0.2.0"
+    },
+    {
       "name": "draw-skills",
       "description": "Collection of draw skills",
       "source": "./",

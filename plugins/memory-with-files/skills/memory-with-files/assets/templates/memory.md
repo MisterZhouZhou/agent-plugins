@@ -1,10 +1,10 @@
 # Memory: {{TOPIC}}
 
-## Task Source
+- Slug: `{{SLUG}}`
+- Status: `active`
+- Task source: `{{TASK_SOURCE}}`
 
-`{{TASK_SOURCE}}`
-
-This external artifact is authoritative for tasks and status. Do not copy its checklist here.
+The task source is authoritative for task steps and acceptance status. Do not copy its checklist here.
 
 ## Scope
 
@@ -19,6 +19,10 @@ This external artifact is authoritative for tasks and status. Do not copy its ch
 | Decision | Rationale | Evidence |
 |---|---|---|
 | | | |
+
+## Task Sources
+
+- Primary: `{{TASK_SOURCE}}`
 
 ## Invariants
 

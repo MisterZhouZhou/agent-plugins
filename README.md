@@ -12,7 +12,8 @@
 │   └── marketplace.json
 ├── plugins/
 │   ├── agent-notify/
-│   └── memory-with-files/
+│   ├── memory-with-files/
+│   └── planning-workflows/
 └── skills/
     ├── api-generate-image/
     ├── azure-ssml-tts/
@@ -47,67 +48,92 @@
 
 - 市场名称：`codex-agent-plugins`
 - 配置文件：`.agents/plugins/marketplace.json`
-- 当前插件：`memory-with-files`、`agent-notify`
+- 当前插件：`memory-with-files`、`agent-notify`、`planning-workflows`
 
 ### memory-with-files
 
-将项目的长期上下文保存在项目根目录的 `.memory/` 中，不接管 Superpowers 或 OpenSpec 的任务状态。
+主动维护项目根目录 `.memory/` 中的高价值长期知识、任务记忆和恢复状态，但不接管 `planning-workflows` 的任务清单。
 
-- `SessionStart`：恢复当前项目已激活的 `memory.md` 和 `handoff.md`
-- `PreCompact`：在压缩上下文前提醒刷新 `handoff.md`
+- 目标、主要范围和关键约束基本明确后，可为多阶段任务、复杂问题或跨会话工作主动初始化
+- `SessionStart`：注入项目规则、任务来源、当前阶段和下一步等精简恢复摘要
+- `PreCompact`：压缩前提醒刷新任务恢复状态
+- 不注册结束 Hook，避免每次会话结束都显示重复提醒
+- `findings.md` 默认不自动注入
+- `MEMORY_WITH_FILES_DISABLED=1` 可禁用所有写入和 Hook 输出
 - 项目记忆只写入 `<project-root>/.memory/`，不会写入全局 Codex Memories
 
-### 安装
-
-添加本地插件市场并安装插件：
+#### Codex 安装
 
 ```bash
 codex plugin marketplace add ~/Desktop/ai/agent-plugins
 codex plugin add memory-with-files@codex-agent-plugins
 ```
 
-验证插件是否可用：
+安装后审核并信任 `SessionStart` 和 `PreCompact` Hook，然后新建会话。
 
-```bash
-codex plugin list --marketplace codex-agent-plugins
-```
+#### 初始化与完成
 
-安装后需要审核并信任该插件的 `SessionStart` 和 `PreCompact` Hook，然后重新打开一个 Codex 会话。
-
-### 使用
-
-在需要保存长期上下文的项目根目录中启动 Codex，然后显式调用：
-
-```text
-$memory-with-files 为当前项目初始化持久记忆，主题为“主题名称”，任务来源为 conversation
-```
-
-也可以直接使用自然语言，例如：
-
-```text
-记住这个项目的当前上下文
-保存当前项目记忆
-为这项工作创建可跨会话恢复的项目记忆
-```
-
-初始化后，插件会在当前项目中创建：
+通常由 Skill 在满足高价值条件时主动初始化；也可显式请求“记住这个项目的当前上下文”。新结构为：
 
 ```text
 .memory/
-├── .active_memory
-└── <主题名称>/
-    ├── memory.md
-    ├── findings.md
-    └── handoff.md
+├── project/
+│   ├── memory.md
+│   └── findings.md
+├── tasks/
+│   └── <slug>/
+│       ├── memory.md
+│       ├── findings.md
+│       └── handoff.md
+└── .active_memory
 ```
 
-- `memory.md`：保存稳定约束、决策和任务来源
-- `findings.md`：保存调查证据、实验结果和已排除的假设
-- `handoff.md`：保存当前状态、最近验证结果和下一次恢复位置
-- `SessionStart`：在新会话中自动恢复当前激活的 `memory.md` 和 `handoff.md`
-- `PreCompact`：在上下文压缩前提醒更新 `handoff.md`
+对应规范路径为 `.memory/project/` 与 `.memory/tasks/<slug>`。初始化命令：
 
-项目记忆只保存在当前仓库的 `.memory/` 中，不会写入 Codex 全局 Memories，也不会替代 Superpowers 或 OpenSpec 的任务管理。
+```bash
+python3 plugins/memory-with-files/skills/memory-with-files/scripts/init_memory.py \
+  "主题名称" --root <project-root> \
+  --task-source "docs/planning/plans/YYYY-MM-DD-topic.md"
+```
+
+任务由权威计划确认完成，并写好最终 handoff 后执行：
+
+```bash
+python3 plugins/memory-with-files/skills/memory-with-files/scripts/complete_memory.py \
+  --root <project-root>
+```
+
+完成任务会标记为 `completed`、清除匹配的活动指针并保留目录，后续不再自动注入。旧 `.memory/<slug>/` 会在不覆盖新目录的前提下迁移到 tasks 层。
+
+### planning-workflows
+
+提供两个规划 Skill 和一个独立调试 Skill，并保持类似 Superpowers 的严格自动触发体验。
+
+- `brainstorming`：新增功能、行为修改、架构和方案设计必须先澄清需求并取得设计确认
+- `writing-plans`：将已确认的设计转换为包含精确路径、接口、测试和验证命令的实施计划
+- `systematic-debugging`：Bug、测试失败、构建失败、性能或集成异常必须先调查根因，再提出修复
+- `SessionStart`：在 `startup`、`resume`、`clear`、`compact` 时重新注入三个 Skill 的职责路由
+- 调试 Skill 独立运行且不依赖 TDD；计划或调试完成后不自动进入执行、Review、Worktree 或子代理工作流
+
+#### 安装
+
+```bash
+codex plugin marketplace add ~/Desktop/ai/agent-plugins
+codex plugin add planning-workflows@codex-agent-plugins
+```
+
+安装后审核并信任 `SessionStart` Hook，然后新建 Codex 会话。新功能请求会自动进入 `brainstorming`；设计确认后自动衔接 `writing-plans`。
+
+不要与完整的 Superpowers 插件同时启用，否则两个 Bootstrap 和同类 Skill 会产生重复或冲突触发。
+
+#### 验证
+
+```bash
+python3 -m unittest discover -s plugins/planning-workflows/tests -v
+python3 skills/codex-plugin-marketplaces/scripts/audit_marketplace.py .
+```
+
+更完整的说明见 `plugins/planning-workflows/README.md`。
 
 ### agent-notify
 
@@ -172,7 +198,18 @@ printf '%s' '{"cwd":"/tmp/demo","last_assistant_message":"OpenCode 通知验证"
 
 - 市场名称：`claude-agent-plugins`
 - 配置文件：`.claude-plugin/marketplace.json`
-- 当前包含 `agent-notify` 插件与四个 skill 分组：
+- 当前包含 `agent-notify`、`memory-with-files`、`planning-workflows` 三个插件与四个 skill 分组：
+
+### memory-with-files
+
+Claude Code 与 Codex 共用同一套主动记忆 Skill、项目本地目录、精简恢复摘要和两个生命周期 Hook。
+
+```bash
+/plugin marketplace add ~/Desktop/ai/agent-plugins
+/plugin install memory-with-files@claude-agent-plugins
+```
+
+安装后审核并信任 `SessionStart`、`PreCompact` Hook，再重新启动 Claude Code 会话。任务状态仍由 `planning-workflows` 的设计或实施计划管理；设置 `MEMORY_WITH_FILES_DISABLED=1` 可临时关闭插件。
 
 ### agent-notify
 
@@ -207,6 +244,27 @@ OpenCode 安装请使用仓库根目录脚本：
 ```bash
 ~/Desktop/ai/agent-plugins/scripts/install-opencode.sh install --disable-legacy
 ```
+
+### planning-workflows
+
+与 Codex 版本共用 `brainstorming`、`writing-plans`、`systematic-debugging` 和 SessionStart Bootstrap：
+
+- 新功能、行为修改、架构与方案设计自动进入 `brainstorming`
+- 设计确认后自动衔接 `writing-plans`
+- Bug、测试失败、构建失败、性能或集成异常优先进入 `systematic-debugging`
+- 三个 Skill 按各自职责严格路由；调试 Skill 独立运行且不依赖 TDD
+- 计划或调试完成后停止，不自动进入执行、Review、Worktree 或子代理工作流
+
+#### 安装
+
+```bash
+/plugin marketplace add ~/Desktop/ai/agent-plugins
+/plugin install planning-workflows@claude-agent-plugins
+```
+
+安装后审核并信任 `SessionStart` Hook，然后重新启动 Claude Code 会话。不要与完整的 Superpowers 插件同时启用。
+
+详情见 `plugins/planning-workflows/README.md`。
 
 ### draw-skills
 

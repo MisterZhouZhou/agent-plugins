@@ -6,9 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT}/hooks/memory_hook.py session-start",
-            "commandWindows": "python %PLUGIN_ROOT%\\hooks\\memory_hook.py session-start",
-            "statusMessage": "Restoring active memory"
+            "command": "PLUGIN_DIR=\"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}\"; python3 \"$PLUGIN_DIR/hooks/memory_hook.py\" session-start",
+            "commandWindows": "python -c \"import os,runpy,sys; root=os.environ.get('CLAUDE_PLUGIN_ROOT') or os.environ['PLUGIN_ROOT']; sys.argv=['memory_hook.py','session-start']; runpy.run_path(os.path.join(root, 'hooks', 'memory_hook.py'), run_name='__main__')\"",
+            "statusMessage": "Restoring project memory"
           }
         ]
       }
@@ -19,8 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT}/hooks/memory_hook.py pre-compact",
-            "commandWindows": "python %PLUGIN_ROOT%\\hooks\\memory_hook.py pre-compact",
+            "command": "PLUGIN_DIR=\"${CLAUDE_PLUGIN_ROOT:-${PLUGIN_ROOT}}\"; python3 \"$PLUGIN_DIR/hooks/memory_hook.py\" pre-compact",
+            "commandWindows": "python -c \"import os,runpy,sys; root=os.environ.get('CLAUDE_PLUGIN_ROOT') or os.environ['PLUGIN_ROOT']; sys.argv=['memory_hook.py','pre-compact']; runpy.run_path(os.path.join(root, 'hooks', 'memory_hook.py'), run_name='__main__')\"",
             "statusMessage": "Preparing memory handoff"
           }
         ]

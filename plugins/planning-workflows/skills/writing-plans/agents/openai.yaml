@@ -1,0 +1,4 @@
+interface:
+  display_name: "Writing Plans"
+  short_description: "Turn an approved design into an executable plan."
+  default_prompt: "Use $writing-plans to turn this approved design into an implementation plan."

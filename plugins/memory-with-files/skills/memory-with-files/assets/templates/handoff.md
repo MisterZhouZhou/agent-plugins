@@ -1,14 +1,14 @@
 # Handoff: {{TOPIC}}
 
-## Task Source
-
-`{{TASK_SOURCE}}`
-
-## Current State
+## Current Phase
 
 -
 
-## Relevant Files Or Areas
+## Completed Summary
+
+-
+
+## Blockers Or Open Questions
 
 -
 
@@ -18,10 +18,10 @@
 |---|---|
 | | |
 
-## Unresolved Questions
+## Exact Next Action
 
 -
 
-## Resume Point
+## Authoritative Task Source
 
--
+`{{TASK_SOURCE}}`

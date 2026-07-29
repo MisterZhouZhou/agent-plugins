@@ -1,0 +1,19 @@
+{
+  "name": "planning-workflows",
+  "version": "0.2.0",
+  "description": "Strict brainstorming, implementation planning, and systematic debugging workflows.",
+  "author": {
+    "name": "MisterZhou",
+    "email": "16619930394@163.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "brainstorming",
+    "planning",
+    "requirements",
+    "debugging",
+    "root-cause",
+    "investigation",
+    "workflow"
+  ]
+}

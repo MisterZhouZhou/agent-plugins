@@ -27,6 +27,20 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Productivity"
+    },
+    {
+      "name": "planning-workflows",
+      "source": {
+        "source": "local",
+        "path": "./plugins/planning-workflows"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity",
+      "version": "0.2.0+codex.20260729163408",
+      "description": "Strict brainstorming, implementation planning, and systematic debugging workflows with SessionStart routing."
     }
   ]
 }

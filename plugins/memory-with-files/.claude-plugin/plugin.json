@@ -1,0 +1,9 @@
+{
+  "name": "memory-with-files",
+  "version": "0.2.0",
+  "description": "Proactively preserve project-local durable memory and recoverable task state without managing the task plan.",
+  "author": {
+    "name": "MisterZhou"
+  },
+  "license": "MIT"
+}
