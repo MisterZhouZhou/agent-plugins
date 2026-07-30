@@ -1,6 +1,6 @@
 {
   "name": "agent-notify",
-  "version": "0.1.0+codex",
+  "version": "0.1.1+codex.20260730125449",
   "description": "macOS desktop notifications for Codex lifecycle events (Stop and PermissionRequest).",
   "author": {
     "name": "MisterZhouZhou"

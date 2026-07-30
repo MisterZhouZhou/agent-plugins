@@ -26,7 +26,9 @@
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
       },
-      "category": "Productivity"
+      "category": "Productivity",
+      "version": "0.1.1+codex.20260730125449",
+      "description": "macOS notifications for Claude Code, Codex, and OpenCode with click-to-activate support including Ghostty."
     },
     {
       "name": "planning-workflows",

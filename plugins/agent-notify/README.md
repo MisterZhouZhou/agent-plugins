@@ -138,7 +138,7 @@ agent-notify doctor --open-settings
 ## 故障排查
 
 - **没有通知弹出**：先跑 `agent-notify doctor` 确认权限；再确认 `brew list terminal-notifier` 存在
-- **点击通知没激活终端**：`-activate` 只识别 Warp、Terminal.app、iTerm2、VS Code、Cursor；其他终端设置 `AGENT_NOTIFY_ACTIVATE=<bundle-id>` 覆盖
+- **点击通知没激活终端**：`-activate` 默认识别 Ghostty、Warp、Terminal.app、iTerm2、VS Code、Cursor；其他终端设置 `AGENT_NOTIFY_ACTIVATE=<bundle-id>` 覆盖
 - **Codex 首次启用无反应**：打开 `/hooks` 信任本插件的 Hook 后重启会话
 - **OpenCode 启用无反应**：运行 `scripts/install-opencode.sh status`，确认 `agent-notify.js` 位于 `~/.opencode/plugins/`，然后完整重启 OpenCode
 - **OpenCode 收到重复通知**：检查 `~/.opencode/plugins/notification.ts` 等旧通知插件，或运行 `scripts/install-opencode.sh install --disable-legacy`

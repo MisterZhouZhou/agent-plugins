@@ -11,10 +11,11 @@
   "plugins": [
     {
       "name": "agent-notify",
-      "description": "macOS desktop notifications for Claude Code lifecycle events (Stop and permission_prompt).",
+      "description": "macOS desktop notifications for Claude Code, Codex, and OpenCode with click-to-activate support including Ghostty.",
       "source": "./plugins/agent-notify",
       "strict": false,
-      "category": "Productivity"
+      "category": "Productivity",
+      "version": "0.1.1"
     },
     {
       "name": "memory-with-files",

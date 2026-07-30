@@ -1,6 +1,6 @@
 {
   "name": "agent-notify",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "macOS desktop notifications for Claude Code lifecycle events (Stop and permission_prompt).",
   "author": {
     "name": "MisterZhouZhou"

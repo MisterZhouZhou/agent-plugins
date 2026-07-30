@@ -31,6 +31,7 @@ TERMINAL_BUNDLE_IDS = {
     "vscode": "com.microsoft.VSCode",
     "WarpTerminal": "dev.warp.Warp-Stable",
     "cursor": "com.todesktop.230313mzl4w4u92",
+    "ghostty": "com.mitchellh.ghostty",
 }
 
 NOTIFICATION_SETTINGS_URL = (
