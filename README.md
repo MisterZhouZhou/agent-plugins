@@ -18,6 +18,7 @@
     ├── api-generate-image/
     ├── azure-ssml-tts/
     ├── cdp-skill/
+    ├── codex-app-extension/
     ├── chrome-extension-icon-generator/
     ├── cli-session-manager/
     ├── codex-plugin-marketplaces/
@@ -35,6 +36,7 @@
     ├── safari-web-extension/
     ├── svelte-skill/
     ├── tauri-desktop/
+    ├── tempermonkey-skill/
     ├── threejs-skill/
     ├── uni-app-x/
     ├── vscode-extension-skills/
@@ -299,6 +301,8 @@ OpenCode 安装请使用仓库根目录脚本：
 - `codex-session-import`
 - `cold-water`
 - `cdp-skill`
+- `codex-app-extension`
+- `tempermonkey-skill`
 
 ## Skills 一览
 
@@ -789,7 +793,27 @@ OpenCode 安装请使用仓库根目录脚本：
 - `skills/cdp-skill/SKILL.md`
 - `skills/cdp-skill/references/`
 
-### 26. codex-plugin-marketplaces
+### 26. codex-app-extension
+
+用途：
+
+- 设计 Codex App 的 CDP 注入、页面 bridge 和 App Server RPC 边界
+- 解释 composer、cron automation、thread、Skill、CLI 与 Taskboard/taskctl 的触发关系
+- 提供 userscript、CDP 注入器和 App Server 客户端的可复用 JavaScript 模板
+
+适用请求示例：
+
+- “为什么 Taskboard 写库后 Codex 没有执行？”
+- “帮我设计 Codex App 页面到 App Server 的安全 bridge”
+- “排查 Codex App reload 后注入失效和 pending 请求不返回”
+
+详情见：
+
+- `skills/codex-app-extension/SKILL.md`
+- `skills/codex-app-extension/references/architecture.md`
+- `skills/codex-app-extension/templates/`
+
+### 27. codex-plugin-marketplaces
 
 用途：
 
@@ -815,6 +839,27 @@ python3 skills/codex-plugin-marketplaces/scripts/audit_marketplace.py .
 
 - `skills/codex-plugin-marketplaces/SKILL.md`
 - `skills/codex-plugin-marketplaces/references/`
+
+### 28. tempermonkey-skill
+
+用途：
+
+- 创建、维护和审查 Tampermonkey、Violentmonkey、Greasemonkey Userscript
+- 提供可直接复制的最小 `.user.js` 模板，以及 `@match`、`@run-at`、`@grant`、`@connect` 等元数据说明
+- 覆盖 DOM 增强、样式注入、事件委托、`MutationObserver`、localStorage、GM API 和跨标签同步
+- 排查 SPA、动态渲染、浏览器后退、CSS 优先级和“脚本运行但页面效果不生效”等问题
+- 强调最小权限、私有命名空间、版本递增、兼容性检测和针对性测试
+
+适用请求示例：
+
+- “帮我创建一个 Tampermonkey 脚本”
+- “给这个 Userscript 增加侧边栏设置和菜单入口”
+- “为什么脚本运行了但网页标题没有变色”
+- “排查 SPA 页面动态加载后 Userscript 失效”
+
+详情见：
+
+- `skills/tempermonkey-skill/SKILL.md`
 
 ## 维护建议
 

@@ -79,7 +79,9 @@
         "./skills/codex-session-import",
         "./skills/cold-water",
         "./skills/cdp-skill",
-        "./skills/agent-cli-skill"
+        "./skills/codex-app-extension",
+        "./skills/agent-cli-skill",
+        "./skills/tempermonkey-skill"
       ]
     }
   ]
