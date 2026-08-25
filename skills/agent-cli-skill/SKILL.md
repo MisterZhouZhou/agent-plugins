@@ -1,6 +1,6 @@
 ---
 name: agent-cli-skill
-description: Use when authoring or debugging Claude Code, Codex, or OpenCode CLI integrations—plugins, hooks/events, marketplace packaging, MCP, subagents/agents, skills, Claude Agent SDK, Codex SDK/GitHub Action/app-server, OpenCode SDK/server/plugins/tools/LSP/ACP/models/permissions, agent-notify, or multi-CLI verification. For bare "subagent(s)" / "创建 subagent" with no CLI named, load all three subagent refs (claude+codex+opencode); only narrow to one CLI when the user names Claude/Codex/OpenCode. Prefer this skill over single-CLI config skills for cross-CLI agent questions.
+description: Use when authoring or debugging Claude Code, Codex, OpenCode, or Pi Agent CLI integrations—plugins, hooks/events, marketplace packaging, MCP, subagents/agents, skills, Claude Agent SDK, Codex SDK/GitHub Action/app-server, OpenCode SDK/server/plugins/tools/LSP/ACP/models/permissions, Pi providers/models/extensions/packages/sessions, agent-notify, or multi-CLI verification. For bare "subagent(s)" / "创建 subagent" with no CLI named, load all three subagent refs (claude+codex+opencode); only narrow to one CLI when the user names Claude/Codex/OpenCode/Pi. Prefer this skill over single-CLI config skills for cross-CLI agent questions.
 ---
 
 # Agent CLI Skill
@@ -10,7 +10,7 @@ Route first. Prefer the smallest reference set that answers the question.
 
 ## Hard rule
 
-1. Classify the target CLI(s). If the user names Claude / Codex / OpenCode (or clear path/keyword signals), lock to that CLI.
+1. Classify the target CLI(s). If the user names Claude / Codex / OpenCode / Pi (or clear path/keyword signals), lock to that CLI.
 2. Read **only** the matching files under `references/` — except the subagent multi-load rule below.
 3. Do **not** open every reference by default.
 4. Read `shared/*` only for cross-CLI comparison, shared `bin/assets`, or multi-CLI packaging.
@@ -25,10 +25,11 @@ Route first. Prefer the smallest reference set that answers the question.
 | Claude / Claude Code / `.claude/agents` / Agent tool / `/subtask` | **only** `references/claude/subagents.md` |
 | Codex / `.codex/agents` / `agents.toml` / `developer_instructions` | **only** `references/codex/subagents.md` |
 | OpenCode / `.opencode/agent` / `opencode agent` / mode:subagent | **only** `references/opencode/subagents.md` |
+| Pi / Pi Agent / `.pi/agents` / Pi subagent / package-provided subagent | **only** `references/pi/subagents.md` |
 | Two or three CLIs named | the matching subagent files for each named CLI |
 | Bare `subagent(s)` / `如何创建 subagent` / no CLI named | **all three**: `claude/subagents.md` + `codex/subagents.md` + `opencode/subagents.md` |
 
-When loading all three, answer with a short comparison (paths, format, mode) then per-CLI details. Do **not** fall back to `customize-opencode` or any single-CLI built-in for bare subagent questions.
+When loading all three, answer with a short comparison (paths, format, mode) then per-CLI details. Do **not** fall back to `customize-opencode` or any single-CLI built-in for bare subagent questions. Do not add Pi to the bare-subagent three-way load unless the user explicitly asks for Pi or a four-CLI comparison.
 
 ## Router
 
@@ -65,6 +66,15 @@ When loading all three, answer with a short comparison (paths, format, mode) the
 | OpenCode ACP / editor embed (`opencode acp`, Zed, JetBrains, nvim) | `references/opencode/acp.md` |
 | OpenCode MCP servers (local/remote, OAuth, tools globs) | `references/opencode/mcp.md` |
 | OpenCode LSP servers (diagnostics, enable/disable, custom LSP) | `references/opencode/lsp.md` |
+| Pi CLI / install / startup / run modes / flags | `references/pi/cli.md` |
+| Pi provider / model / `models.json` / `settings.json` / OpenRouter / API contract or 404 | `references/pi/providers.md` |
+| Pi Package / extension / `package.json#pi` / `pi install` / `pi -e` | `references/pi/extensions.md` |
+| Pi skills / prompt templates / `AGENTS.md` / project resources | `references/pi/skills.md` |
+| Pi subagents / `.pi/agents` / single / parallel / chain | `references/pi/subagents.md` |
+| Pi MCP / external tools / MCP extension boundary | `references/pi/mcp.md` |
+| Pi sessions / resume / JSON / RPC / logs | `references/pi/sessions.md` |
+| Pi SAFE / YOLO / project trust / approvals / permissions | `references/pi/permissions.md` |
+| Pi troubleshooting / verification / endpoint diagnosis / completion criteria | `references/pi/testing.md` |
 | Event mapping across CLIs / shared assets / agent-notify multi-CLI | `references/shared/lifecycle.md` |
 | How to verify / test | `references/shared/testing.md` (+ the target CLI file if needed) |
 
@@ -150,4 +160,10 @@ Then read only the CLI-specific files for the side you are implementing.
 | `@openai/codex-sdk` / `openai-codex` / `resumeThread` / `AsyncCodex` / `CodexConfig` / `Sandbox.workspace_write` / `final_response` | Codex SDK |
 | `openai/codex-action` / `codex-action@v1` / `safety-strategy` / `permission-profile` / `final-message` / `allow-users` / `allow-bots` / `allow-bot-users` | Codex GitHub Action |
 | `codex app-server` / thread/start / turn/start | Codex app-server |
+| `pi` / `pi install` / `pi -e` / `~/.pi/agent` / `.pi/` | Pi CLI and resources |
+| `models.json` / `settings.json` with Pi context | Pi providers/models |
+| `openai-completions` / `openai-responses` / `anthropic-messages` / `google-generative-ai` with Pi context | Pi providers/models |
+| `.pi/agents` / Pi Agent roles / single / parallel / chain | Pi subagents |
+| Pi SDK / `createAgentSession` / `SessionManager` / `ResourceLoader` | Pi CLI and sessions |
+
 | agent-notify | shared lifecycle + each targeted CLI |
