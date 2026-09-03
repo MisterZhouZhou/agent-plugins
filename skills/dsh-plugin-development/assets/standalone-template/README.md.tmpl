@@ -1,0 +1,30 @@
+# __PACKAGE_NAME__
+
+一个独立的 DSH 插件。
+
+## 兼容性
+
+- DSH：`__DSH_RANGE__`
+- Cordis 基线：`__CORDIS_VERSION__`
+- 官方 Client SDK 基线：`__SDK_VERSION__`
+
+上面的版本是 **2026-09-02 调研基线**，不是永久的最新版。发布或升级前，请按宿主版本重新确认兼容 cohort。
+
+## 开发
+
+```bash
+npm install
+npm test
+npm run typecheck
+npm run build
+node /path/to/dsh-plugin-development/scripts/validate.mjs .
+```
+
+## 安装到本地 DSH profile
+
+```bash
+dsh plugin --profile web add link:/absolute/path/to/__PACKAGE_NAME__
+dsh web
+```
+
+发布前请先执行 `npm pack`，再从生成的 tarball 安装验证。

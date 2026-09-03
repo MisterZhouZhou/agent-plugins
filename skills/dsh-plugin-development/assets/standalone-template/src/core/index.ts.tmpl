@@ -1,0 +1,10 @@
+export const protocolNamespace = 'dsh:__PLUGIN_NAME__' as const
+
+export interface ExampleRequest {
+  operation: string
+}
+
+export interface ExampleResponse {
+  ok: boolean
+  errorCode?: string
+}

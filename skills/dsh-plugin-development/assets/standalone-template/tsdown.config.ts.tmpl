@@ -1,0 +1,36 @@
+import { existsSync } from 'node:fs'
+import { defineConfig } from 'tsdown'
+
+const hasClient = existsSync('src/client/index.ts')
+
+export default defineConfig([
+  {
+    entry: ['src/index.ts'],
+    format: ['esm'],
+    dts: true,
+    outDir: 'lib',
+    clean: true,
+  },
+  ...(hasClient
+    ? [{
+        entry: ['src/client/index.ts'],
+        format: ['cjs'],
+        dts: true,
+        outDir: 'lib',
+        outExtensions: () => ({ dts: '.d.ts', js: '.js' }),
+        external: [
+          'react',
+          'react-dom',
+          'react/jsx-runtime',
+          '@deepseek-ai/cordis',
+          '@deepseek-ai/dsh-client-connection',
+        ],
+        outputOptions: {
+          entryFileNames: 'client.js',
+          banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify('__PACKAGE_NAME__')}, factory: (require) => {`,
+          footer: 'return module.exports; } });',
+          intro: 'var module = { exports: {} }; var exports = module.exports;',
+        },
+      }]
+    : []),
+])

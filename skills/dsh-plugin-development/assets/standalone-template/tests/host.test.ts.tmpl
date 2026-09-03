@@ -1,0 +1,9 @@
+import { describe, expect, it } from 'vitest'
+import { apply, name } from '../src/index'
+
+describe('Host 插件入口', () => {
+  it('导出稳定名称和可调用入口', () => {
+    expect(name).toBe('__PLUGIN_NAME__')
+    expect(() => apply({})).not.toThrow()
+  })
+})

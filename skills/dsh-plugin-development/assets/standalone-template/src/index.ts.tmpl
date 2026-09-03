@@ -1,0 +1,9 @@
+export const name = '__PLUGIN_NAME__'
+
+export interface Config {
+  enabled?: boolean
+}
+
+export function apply(_ctx: unknown, _config: Config = {}): void {
+  // 在这里注册 Host 服务、命令或任务，并为每项注册建立清理路径。
+}
