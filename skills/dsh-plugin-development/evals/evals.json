@@ -1,0 +1,38 @@
+{
+  "skill_name": "dsh-plugin-development",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "使用 $dsh-plugin-development 在一个空目录创建独立的 Full-stack DSH 插件 project-notes，npm 包名为 @acme/dsh-project-notes。它需要一个设置卡、Host 持久化服务和共享请求响应协议。先生成工程并完成发布前验证，但不要发布。",
+      "expected_output": "应选择 Full-stack，建立 Host/Client/Core 分层，生成一致的 bundle patch、client export 和 dsh.client 声明，运行单元测试、构建、校验器和 tarball 检查，并且不执行 npm publish。",
+      "files": [],
+      "assertions": [
+        "不引用 dsh-web/shared 或固定第三方 npm scope",
+        "跨端协议位于 Core 且只包含可序列化契约",
+        "发布前验证包含 npm pack 或 tarball 安装"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "使用 $dsh-plugin-development 创建一个 Host-only DSH 插件 safe-runner，用于执行经过白名单校验的命令。不要生成 Web UI。",
+      "expected_output": "应选择 Host-only，不声明 dsh.client 或 ./client export，保留 Cordis bundle patch，覆盖命令白名单、错误清洗、进程清理和失败路径测试。",
+      "files": [],
+      "assertions": [
+        "manifest 不包含 dsh.client",
+        "manifest 不包含 ./client export",
+        "测试覆盖拒绝未授权命令和卸载清理"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "使用 $dsh-plugin-development 排查一个插件：link 到 web profile 时页面正常，从 npm 安装后 Host 能加载但页面消失。给出检查顺序并直接修复能在仓库内确认的问题。",
+      "expected_output": "应优先检查 npm files、./client export、dsh.client、lib/client.js、ModuleLoader id、bundle patch 和 tarball 实际内容；修复后从 tarball 重装验证，而不是只重复源码 link 测试。",
+      "files": [],
+      "assertions": [
+        "先检查 npm tarball 内容而不是修改 DSH 源码",
+        "区分 Host 加载链和 Client 加载链",
+        "验证修复后的打包产物"
+      ]
+    }
+  ]
+}
