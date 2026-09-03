@@ -9,6 +9,10 @@ describe('插件 manifest', () => {
     const patch = readFileSync(resolve(root, manifest.dsh.bundle.patch), 'utf8')
     expect(manifest.name).toBe('__PACKAGE_NAME__')
     expect(patch).toContain(`name: '${manifest.name}'`)
-    expect(manifest.exports['./client'].default).toBe('./lib/client.js')
+    if (manifest.dsh?.client) {
+      expect(manifest.exports['./client']?.default).toBe('./lib/client.js')
+    } else {
+      expect(manifest.exports['./client']).toBeUndefined()
+    }
   })
 })
