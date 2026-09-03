@@ -106,6 +106,17 @@ function extractPatchPackageName(source) {
   return match?.[1] || ''
 }
 
+function parsePackJson(stdout) {
+  for (let offset = stdout.indexOf('['); offset >= 0; offset = stdout.indexOf('[', offset + 1)) {
+    try {
+      return JSON.parse(stdout.slice(offset))
+    } catch {
+      // npm lifecycle scripts may write logs before the JSON payload.
+    }
+  }
+  return null
+}
+
 async function checkPack(result, projectDirectory) {
   try {
     const { stdout } = await execFileAsync('npm', ['pack', '--dry-run', '--json'], {
@@ -115,7 +126,7 @@ async function checkPack(result, projectDirectory) {
     })
     let packOutput
     try {
-      packOutput = JSON.parse(stdout)
+      packOutput = parsePackJson(stdout)
     } catch {
       addWarning(result, 'PACK_OUTPUT_UNPARSEABLE', 'npm pack 已成功，但输出不是 JSON，无法展示文件表。')
       return
