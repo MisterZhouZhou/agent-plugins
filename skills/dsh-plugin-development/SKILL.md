@@ -29,9 +29,9 @@ description: 从零创建、实现、测试、调试、本地安装或发布独�
 
 1. 判断插件是 Host-only、Client-only 还是 Full-stack；只创建需求需要的半区。
 2. 确定目标 DSH 版本，再选择同一兼容 cohort 的官方 SDK。
-3. 新项目优先运行 `node scripts/scaffold.mjs`；已有项目先审计再补文件。
+3. 新项目先定位本 Skill 自身目录，再用该目录下脚本的绝对路径运行 `scripts/scaffold.mjs`；已有项目先审计再补文件。
 4. 先定义 Core 协议，再实现 Host 和 Client；跨端只交换可序列化数据。
-5. 运行单元测试、构建、`node scripts/validate.mjs <project>` 和 tarball 安装测试。
+5. 运行单元测试、构建、由 Skill 自身目录定位的 `scripts/validate.mjs <project>` 和 tarball 安装测试。
 6. 使用 link 或 tarball 安装到隔离 profile，验证 Host 与 Client 两条加载链。
 7. 发布前展示包名、版本、registry、access、dist-tag 和 pack 文件表，等待明确确认。
 
