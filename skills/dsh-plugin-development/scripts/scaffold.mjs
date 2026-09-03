@@ -201,7 +201,7 @@ async function main(argv = process.argv.slice(2)) {
   console.log('  pnpm install')
   console.log('  pnpm test')
   console.log('  pnpm build')
-  console.log('  pnpm validate .')
+  console.log(`  node ${join(scriptDirectory, 'validate.mjs')} ${targetDirectory} --json`)
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
