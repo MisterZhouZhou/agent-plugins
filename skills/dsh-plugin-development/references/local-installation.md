@@ -19,7 +19,8 @@
 ```bash
 pnpm build
 dsh plugin --profile web add link:/absolute/path/to/plugin
-dsh web
+dsh --profile web --dump-config
+dsh --profile web
 ```
 
 其中 `link:/absolute/path/to/plugin` 必须指向包含 `package.json`、构建产物和 patch 的插件项目根目录，不要指向 `src/` 或单个 `.ts` 文件。
@@ -43,7 +44,8 @@ npm pack
 # 下面的文件名以 npm pack 实际输出为准
 
 dsh plugin --profile web add /absolute/path/to/package.tgz
-dsh web
+dsh --profile web --dump-config
+dsh --profile web
 ```
 
 安装前可先在临时目录验证包的消费方式：
@@ -63,6 +65,16 @@ node -e "import('你的包名/client').then(() => console.log('client export ok'
 ```
 
 上述 Node import 只验证 exports 可解析，不能替代浏览器 ModuleLoader 冒烟。最终仍需执行 DSH profile 安装和 `dsh web`。
+
+## 源码 overlay 与 profile 的区别
+
+在 DSH 官方源码 checkout 内，未打包的临时插件可以通过 overlay 直接运行：
+
+```bash
+pnpm dsh web --patch /absolute/path/to/local-dev.patch.yml
+```
+
+这条路径适合快速试验源码和 patch；它不等于 `dsh plugin --profile ... add` 的安装链。profile 会维护自己的 `dsh.profile` bundle 列表，正式验收应从 link 和 tarball 两条路径都走一遍。
 
 ## profile 与宿主验证
 
@@ -141,3 +153,15 @@ ModuleLoader 注册：
 发现的问题与修复：
 复验时间：
 ```
+
+## 会话 UI 插件的安装故障补充
+
+`dsh plugin --profile web add/remove` 修改的是整个 profile 的依赖图，不一定只处理当前插件。若执行过程中出现大量包重新安装，并卡在某个无关依赖的 `postinstall`，例如 `cloudflared` 下载二进制，应将其判定为 profile 安装链阻塞，而不是当前 Client 功能缺失。
+
+排查顺序：
+
+1. 先确认插件是否使用 `link:`。如果是，重新构建 `lib/client.js` 后通常只需重启或强制刷新 DSH Web，不要为了刷新本地代码反复 remove/add。
+2. 如果是 tarball，确认重新生成了新的 `.tgz`，再安装新包；不要把旧 tarball 当成新构建。
+3. 如果必须重新整理 profile，先从 profile lockfile/package manifest 查出引入阻塞包的插件或功能。
+4. 不要直接编辑宿主生成的 bundle 或安装目录绕过问题；应使用 DSH 支持的插件管理、依赖移除、网络代理或脚本策略。
+5. 安装完成后仍要验证浏览器实际下载的 Client bundle，而不是只确认命令退出成功。

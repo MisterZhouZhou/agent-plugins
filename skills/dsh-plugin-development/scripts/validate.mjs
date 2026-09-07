@@ -117,7 +117,7 @@ function parsePackJson(stdout) {
   return null
 }
 
-async function checkPack(result, projectDirectory) {
+async function checkPack(result, projectDirectory, manifest) {
   try {
     const { stdout } = await execFileAsync('npm', ['pack', '--dry-run', '--json'], {
       cwd: projectDirectory,
@@ -134,12 +134,32 @@ async function checkPack(result, projectDirectory) {
     const files = packOutput?.[0]?.files
     if (Array.isArray(files)) {
       const paths = files.map((file) => file.path).filter(Boolean)
-      for (const required of ['package.json', 'cordis.patch.yml', 'README.md', 'LICENSE']) {
-        if (!paths.includes(required)) {
-          addCheck(result, 'PACK_CONTENT_MISSING', false, `tarball 缺少 ${required}`)
-        }
+      const declaredTargets = [
+        exportTarget(manifest.exports, '.'),
+        manifest.types || exportTarget(manifest.exports, '.', 'types'),
+        exportTarget(manifest.exports, './client'),
+        exportTarget(manifest.exports, './client', 'types'),
+      ]
+        .filter(isNonEmptyString)
+        .map(normalizeExportPath)
+      const requiredPaths = [...new Set([
+        'package.json',
+        normalizeExportPath(manifest.dsh?.bundle?.patch),
+        'README.md',
+        'LICENSE',
+        ...declaredTargets,
+      ].filter(isNonEmptyString))]
+      const missingPaths = requiredPaths.filter((required) => !paths.includes(required))
+      for (const required of missingPaths) {
+        addCheck(result, 'PACK_CONTENT_MISSING', false, `tarball 缺少声明的文件：${required}`)
       }
-      result.checks.push({ name: 'PACK_CONTENT', ok: true, detail: `npm pack 将包含 ${paths.length} 个文件` })
+      result.checks.push({
+        name: 'PACK_CONTENT',
+        ok: missingPaths.length === 0,
+        detail: missingPaths.length === 0
+          ? `npm pack 将包含 ${paths.length} 个文件，且所有公开入口/类型声明均在包内`
+          : `npm pack 将包含 ${paths.length} 个文件，但缺少 ${missingPaths.length} 个必需文件`,
+      })
     } else {
       addWarning(result, 'PACK_CONTENT_UNKNOWN', 'npm pack 未返回可识别的文件表。')
     }
@@ -200,6 +220,15 @@ export async function validateProject(projectPath, options = {}) {
     }
   }
 
+  const rootTypesTarget = manifest.types || exportTarget(manifest.exports, '.', 'types')
+  if (isNonEmptyString(rootTypesTarget)) {
+    if (await pathExists(join(projectDirectory, normalizeExportPath(rootTypesTarget)))) {
+      result.checks.push({ name: 'ROOT_TYPES_TARGET', ok: true, detail: `根类型声明存在：${rootTypesTarget}` })
+    } else {
+      addWarning(result, 'ROOT_TYPES_TARGET_MISSING', `根类型声明尚未生成：${rootTypesTarget}；请在 npm pack 前先运行 build。`)
+    }
+  }
+
   const patchRelative = manifest.dsh?.bundle?.patch
   addCheck(result, 'PATCH_DECLARATION', isNonEmptyString(patchRelative), 'dsh.bundle.patch 必须是非空路径')
   let patchPath = ''
@@ -221,6 +250,42 @@ export async function validateProject(projectPath, options = {}) {
   const dshRange = manifest.dsh?.engines?.dsh
   addCheck(result, 'DSH_ENGINE', !isClearlyInvalidRange(dshRange), 'dsh.engines.dsh 必须是非空且看起来合法的版本范围')
 
+  const hostSourcePath = join(projectDirectory, 'src/index.ts')
+  if (await pathExists(hostSourcePath)) {
+    try {
+      const hostSource = await readText(hostSourcePath)
+      const declaresConfigType = /export\s+(?:interface|type)\s+Config\b/.test(hostSource)
+      const exportsRuntimeConfig = /export\s+const\s+Config\s*(?::[^=]+)?=/.test(hostSource)
+      if (declaresConfigType && !exportsRuntimeConfig) {
+        addWarning(result, 'CONFIG_SCHEMA', 'src/index.ts 声明了 Config 类型，但没有导出同名运行时 Schema；Cordis 将无法校验配置和填充默认值。')
+      }
+      if (exportsRuntimeConfig) {
+        const dependencies = { ...manifest.devDependencies, ...manifest.dependencies }
+        if (!dependencies['@deepseek-ai/schemastery']) {
+          addWarning(result, 'CONFIG_SCHEMA_DEPENDENCY', '检测到运行时 Config schema，但 package.json 未声明 @deepseek-ai/schemastery。')
+        }
+      }
+    } catch (error) {
+      addWarning(result, 'HOST_SOURCE_UNREADABLE', `无法读取 Host 入口以检查 Config schema：${error.message}`)
+    }
+  }
+
+  const dependencyMap = { ...manifest.devDependencies, ...manifest.dependencies }
+  if (await pathExists(hostSourcePath)) {
+    try {
+      const hostSource = await readText(hostSourcePath)
+      const looksLikeTool = /\bdefineTool\b|ctx\.tools\.register/.test(hostSource)
+      if (looksLikeTool) {
+        const hasToolsDependency = isNonEmptyString(dependencyMap['@deepseek-ai/dsh-tools'])
+        addCheck(result, 'TOOL_DEPENDENCY', hasToolsDependency, '使用 defineTool/ctx.tools.register 时必须声明 @deepseek-ai/dsh-tools')
+        const declaresToolsInject = /export\s+const\s+inject\s*=\s*\[[^\]]*['\"]tools['\"]/s.test(hostSource)
+        addCheck(result, 'TOOL_INJECT', declaresToolsInject, 'Tool 插件必须通过 inject 声明 tools 服务依赖')
+      }
+    } catch (error) {
+      addWarning(result, 'TOOL_SOURCE_UNREADABLE', `无法读取 Host 入口以检查 Tool 契约：${error.message}`)
+    }
+  }
+
   const clientSourcePath = join(projectDirectory, 'src/client/index.ts')
   const hasClientSource = await pathExists(clientSourcePath)
   const clientDeclaration = manifest.dsh?.client
@@ -231,6 +296,14 @@ export async function validateProject(projectPath, options = {}) {
     const clientTarget = exportTarget(manifest.exports, './client')
     if (!(await pathExists(join(projectDirectory, normalizeExportPath(clientTarget))))) {
       addWarning(result, 'CLIENT_EXPORT_TARGET_MISSING', `Client 入口目标尚未生成：${clientTarget}；请在 npm pack 前先运行 build。`)
+    }
+    const clientTypesTarget = exportTarget(manifest.exports, './client', 'types')
+    if (clientTypesTarget) {
+      if (await pathExists(join(projectDirectory, normalizeExportPath(clientTypesTarget)))) {
+        result.checks.push({ name: 'CLIENT_TYPES_TARGET', ok: true, detail: `Client 类型声明存在：${clientTypesTarget}` })
+      } else {
+        addWarning(result, 'CLIENT_TYPES_TARGET_MISSING', `Client 类型声明尚未生成：${clientTypesTarget}；请在 npm pack 前先运行 build。`)
+      }
     }
   }
 
@@ -266,7 +339,7 @@ export async function validateProject(projectPath, options = {}) {
   if (options.skipPack) {
     result.checks.push({ name: 'PACK_SKIPPED', ok: true, detail: '按参数跳过 npm pack --dry-run' })
   } else {
-    await checkPack(result, projectDirectory)
+    await checkPack(result, projectDirectory, manifest)
   }
 
   result.ok = result.errors.length === 0

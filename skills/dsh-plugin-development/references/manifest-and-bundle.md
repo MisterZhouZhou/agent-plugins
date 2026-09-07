@@ -36,6 +36,20 @@
 }
 ```
 
+### Config 与运行时依赖
+
+如果入口导出 `Config` 类型和同名运行时 schema，schema 包必须作为运行时 `dependencies` 声明：
+
+```json
+{
+  "dependencies": {
+    "@deepseek-ai/schemastery": "<与宿主验证过的版本范围>"
+  }
+}
+```
+
+Tool 还必须声明 `@deepseek-ai/dsh-tools`，并在代码中导出 `inject: ['tools']`。Tool 的 schema、渲染和执行契约见 `references/tool-development.md`。不要仅因为某个包能在当前机器解析，就把它列为 Client external。
+
 ### 字段一致性
 
 | 字段 | 约束 | 检查重点 |

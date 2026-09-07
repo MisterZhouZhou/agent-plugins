@@ -33,6 +33,40 @@
         "区分 Host 加载链和 Client 加载链",
         "验证修复后的打包产物"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "使用 $dsh-plugin-development 从零创建一个 Host-only Tool 插件 audit-log-tool，使用官方 dsh-tools 注册一个带参数校验、结构化输出和 render 的工具；完成 typecheck、单元测试、构建和发布前校验，但不要发布。",
+      "expected_output": "应选择 Host-only + Tool，声明 @deepseek-ai/dsh-tools 运行时依赖和 inject=[tools]，使用 defineTool 注册，不把工具注册放在模块顶层；测试参数拒绝、output schema/render、错误清洗和卸载后不再可见。",
+      "files": [],
+      "assertions": [
+        "manifest 声明 @deepseek-ai/dsh-tools",
+        "Host 入口声明 inject=[tools] 并调用 ctx.tools.register(defineTool(...))",
+        "发布前验证包含 npm pack 或实际 tarball 安装",
+        "不把 client-only 形态用于 Tool"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "使用 $dsh-plugin-development 设计一个可替换 Provider 的 DSH 能力：一个 Service Definition、一个本地 Provider、一个 Tool Consumer；说明如何在 cordis.yml/profile 组合，并为服务消失、HMR 和取消补齐测试。",
+      "expected_output": "应把稳定的请求响应协议和运行时校验放在 Definition，Provider 与 Consumer 都依赖 Definition 而不互相依赖，通过 profile/patch 组合实现；说明必需/可选 inject、ctx.get、ctx.effect、服务卸载清理和组合测试。",
+      "files": [],
+      "assertions": [
+        "明确区分 Definition、Provider、Consumer 三个角色",
+        "不让 Consumer 依赖 Provider 私有实现",
+        "覆盖服务消失、取消、卸载和 HMR 不重复注册"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "使用 $dsh-plugin-development 排查“源码 patch 链正常但 profile 安装后的 npm 包缺少页面”的问题，并对照 DSH 官方开发文档给出修复与验证流程。",
+      "expected_output": "应区分源码 web --patch overlay 与 dsh plugin --profile 安装链，先从 npm pack 的 files、./client export、dsh.client、lib/client.js、ModuleLoader id、external 和浏览器 Console/Network 排查；修复后从 tarball 重装并验证页面、Host 和卸载重载，不直接修改 DSH 源码。",
+      "files": [],
+      "assertions": [
+        "先验证 tarball 实际内容和 manifest",
+        "区分 dsh.bundle 与 profile 的 dsh.profile",
+        "同时验证 Host 加载链、Client 加载链和 HMR/卸载"
+      ]
     }
   ]
 }

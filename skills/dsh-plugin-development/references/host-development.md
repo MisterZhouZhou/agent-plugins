@@ -44,7 +44,88 @@ export function apply(ctx: HostContext, config: Config): void {
 | `Config` | 描述用户可配置项，并区分缺省值、可选值和敏感值。配置解析后应得到规范化对象，业务逻辑不要到处重复处理 `undefined`。 |
 | `apply(ctx, config)` | 作为公开安装入口；负责注册服务、命令、事件和清理逻辑。不要在模块 import 阶段启动进程、读写文件或访问网络。 |
 
-## 2. 配置 schema 与边界
+## 2. 插件的三种导出形态
+
+DSH/Cordis 插件支持函数、对象和类三种形态。三者共享同一生命周期与依赖注入原则，但适用场景不同；不要为了“更规范”而把简单插件强行写成类。
+
+### 函数形式：默认选择
+
+函数形式最轻量，适合绝大多数简单功能、Tool、事件监听和无公共状态的 Host 插件：
+
+```ts
+import type { Context } from '@deepseek-ai/cordis'
+
+export const name = 'example'
+export const inject = ['tools']
+
+export function apply(ctx: Context) {
+  // 通过 ctx 注册 Tool、事件或 effect。
+}
+```
+
+选择规则：
+
+- 插件只需要在加载时注册能力，没有供其他插件调用的公共服务。
+- 状态可以封装在 `apply` 闭包中，并由 `ctx`/`ctx.effect()` 管理清理。
+- 优先用于 Tool、事件监听、一次性初始化和简单业务逻辑。
+
+### 对象形式：结构化打包
+
+对象形式将名称、依赖和执行逻辑放进同一个默认导出对象，行为与函数形式基本一致，适合希望入口更集中、模块结构更明确的插件：
+
+```ts
+import type { Context } from '@deepseek-ai/cordis'
+
+export default {
+  name: 'example',
+  inject: ['tools'],
+  apply(ctx: Context) {
+    // 通过 ctx 注册能力。
+  },
+}
+```
+
+对象形式不是新的生命周期模型，也不会自动获得 Service 能力。其 `apply` 内仍应使用 `ctx.on()`、`ctx.effect()`、`ctx.tools.register()` 等受生命周期追踪的 API。配置 schema、类型推断和对象字段形状必须以目标 DSH/Cordis 版本的公开类型为准。
+
+### 类形式：提供公共 Service
+
+类形式通常继承 Cordis `Service`，用于向其他插件暴露有状态的公共能力、可替换 Provider 或基础设施服务：
+
+```ts
+import { Service, type Context } from '@deepseek-ai/cordis'
+
+export default class MetricsService extends Service {
+  static inject = ['storage']
+
+  constructor(ctx: Context) {
+    super(ctx, 'metrics')
+    // 只做同步初始化；异步资源和清理由生命周期 effect 管理。
+  }
+
+  record(name: string, value: number) {
+    // 对其他插件公开的稳定方法。
+  }
+}
+```
+
+选择规则：
+
+- 插件需要通过 `ctx.<serviceName>` 向其他插件提供公共方法或状态。
+- 能力需要拆成 Definition、Provider、Consumer，或存在多个可替换实现。
+- 自定义 LLM 后端、存储、检索、指标、网关等基础设施能力可采用类形式；具体 LLM Adapter 仍须遵守 DSH 的 `LlmAdapter`/注册契约。
+- `super(ctx, 'serviceName')`、Context declaration merging、Consumer 的 `inject` 名称必须一致。
+
+### 选型速查
+
+| 需求 | 推荐形态 |
+|---|---|
+| Tool、事件监听、简单初始化 | 函数形式 |
+| 与函数形式等价，但希望元数据集中 | 对象形式 |
+| 向其他插件提供公共服务或有状态 Provider | 类形式（`Service`） |
+
+默认从函数形式开始；仅当需要集中对象元数据时改用对象形式，仅当确实要提供公共 Service 时改用类形式。三种形态都必须遵守 Config schema、依赖注入、effect 清理、HMR 和公开 SDK 边界。
+
+## 3. 配置 schema 与边界
 
 TypeScript 类型不能替代运行时校验。配置来自 profile、用户文件或宿主注入时，必须在进入业务逻辑前做 schema 校验：
 
@@ -63,7 +144,7 @@ TypeScript 类型不能替代运行时校验。配置来自 profile、用户文�
 
 对于 Full-stack 插件，Host 返回给 Client 的配置只包含 UI 所需的非敏感字段；schema、错误码和请求/响应结构放入 Core，并在两端分别执行运行时校验。
 
-## 3. Service、生命周期与清理
+## 4. Service、生命周期与清理
 
 需要长期持有状态、响应事件或提供公共方法时，使用 Cordis `Service` 或等价的宿主服务抽象。服务应遵循以下顺序：
 
@@ -75,7 +156,7 @@ TypeScript 类型不能替代运行时校验。配置来自 profile、用户文�
 
 不要把 `setInterval`、进程句柄或事件监听器藏在模块级单例中。模块被重新加载时，旧资源可能无法被宿主回收，最终表现为重复执行、端口占用或内存泄漏。
 
-## 4. 公开 SDK 与资源访问
+## 5. 公开 SDK 与资源访问
 
 运行时能力通过目标 DSH 公开 SDK 获取。当前参考的 Host 文件能力包括：
 
@@ -97,7 +178,7 @@ TypeScript 类型不能替代运行时校验。配置来自 profile、用户文�
 - 不把 Host 密钥下发给浏览器；Client 只调用受控的 Host 方法。
 - 区分网络不可达、认证失败、限流、协议错误和业务拒绝，避免统一返回“未知错误”。
 
-## 5. 错误边界
+## 6. 错误边界
 
 Host 错误分三层处理：
 
@@ -115,7 +196,7 @@ dsh:example:request
 
 请求、响应和事件都必须可序列化，并在接收端再次做 schema 校验。错误码一旦对 Client 公开，就要考虑兼容和迁移，不要让 Client 依赖易变的错误文本。
 
-## 6. Host 单元测试
+## 7. Host 单元测试
 
 Host 测试应围绕公开行为，而不是内部字段或真实 DSH 进程。采用依赖注入策略：
 

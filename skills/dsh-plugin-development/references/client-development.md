@@ -62,7 +62,7 @@ export default defineConfig({
 
 ### external 策略
 
-平台 external 只来自执行时确认的宿主模块表。当前基线（2026-09-02）可作为调查线索而不是永久清单的模块类别包括：
+平台 external 只来自执行时确认的宿主模块表。当前调查基线（2026-09-03）可作为调查线索而不是永久清单的模块类别包括：
 
 - React
 - React DOM
@@ -100,6 +100,12 @@ export function apply(ctx: ClientContext): void {
 ### Settings
 
 当用户需要配置开关、路径、连接参数或权限时使用 Settings 配置卡。设置 UI 只负责展示和提交，默认值、schema、敏感字段处理和持久化由公开 Host/Settings 协议负责。保存成功、校验失败、权限拒绝和网络失败要有独立反馈。
+
+### 全局辅助 Chat / 悬浮 Chat
+
+右下角悬浮的独立辅助 Chat 不应被当作会话详情或隐藏工作区会话实现：它不能写入会话记录，也不能耦合当前 workspace。Host/Client 分层、RPC 流式生命周期、模型选择、Shadow DOM、局部焦点样式、回复空行规范化和安装排查详见 `references/global-inline-chat.md`。
+
+实现前先确认“关闭保留、新建清空、是否恢复本地内容、是否显示推理强度”等产品语义；不要用默认 UI 猜测这些行为。
 
 ## 4. 生命周期、卸载与样式
 

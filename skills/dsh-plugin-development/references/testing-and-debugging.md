@@ -12,7 +12,7 @@
 | Host | 验证 Cordis 插件挂载、服务、配置和清理 | `apply`、依赖注入、失败路径、重载 | Host 单元测试、服务状态 |
 | Client | 验证浏览器入口和 UI 注册 | ModuleLoader、页面/Slot/设置、卸载 | 最小宿主桩、浏览器单元测试 |
 | manifest | 验证 npm 与 DSH 清单的一致性 | `exports`、patch、`dsh` 字段、文件路径 | 可解析的 `package.json` 与 patch |
-| build | 验证 Host/Client 构建产物 | entry、类型声明、source map、构建顺序 | `lib/index.js`、`lib/client.js`、`lib/types` |
+| build | 验证 Host/Client 构建产物 | entry、类型声明、source map、构建顺序 | `lib/index.js`、`lib/client.js`、`lib/types`（由 `tsc -p tsconfig.build.json` 生成） |
 | bundle purity | 验证 Client 包可在浏览器独立加载 | `node:*`、裸 `fs`、宿主私有路径、未知 external | Client bundle 检查记录 |
 | tarball | 验证发布包实际包含可运行文件 | npm `files`、README、LICENSE、patch、exports | `.tgz` 与 `npm pack` 清单 |
 | installation | 验证真实 DSH profile 加载链路 | profile 依赖、Host、浏览器 Network/Console、UI | 隔离 profile 冒烟记录 |
@@ -110,7 +110,7 @@ npm pack
 
 检查 JSON 和生成的 `.tgz`：
 
-- 包内存在 `lib/index.js`、`lib/client.js`（如声明 Client）和 `lib/types`。
+- 包内存在 `lib/index.js`、`lib/client.js`（如声明 Client）和 `lib/types`（由 `tsc -p tsconfig.build.json` 生成）。
 - `cordis.patch.yml` 在包根目录且没有被 `.npmignore` 或 `files` 排除。
 - `package.json` 的 `exports` 指向包内存在的文件；不会指向 `src`、绝对路径或 monorepo 私有文件。
 - README、LICENSE、版本号和包名正确。
@@ -176,6 +176,28 @@ npm pack
 - `exports` 是否指向构建后的路径而非源码路径。
 - patch 是否被打入 tarball，且内部 package name 没有漂移。
 - `prepare`/build 前置脚本是否依赖工作区私有配置、未发布的 shared 包或本机绝对路径。
+
+### 6. Tool 已注册但模型不可见
+
+Tool 通过 `ctx.tools.register(defineTool({...}))` 注册后，在浏览器 Console 可以看到插件加载日志，但模型（AI）的工具列表中不出现该 Tool。
+
+**原因**：DSH 的工具可见性与会话生命周期绑定。Tool 注册成功后，只在**新创建的会话**中可见。重启 DSH Web 后，旧会话仍然使用重启前的工具快照，不会自动刷新。
+
+**排查步骤**：
+
+1. **确认插件已加载**：浏览器 Console 出现插件加载日志（如 `[hello-plugin] plugin loaded!`），证明 `apply` 已执行。
+2. **确认 Tool 代码正确**：`defineTool` 参数完整，`inject` 包含 `'tools'`，`output.schema` 和 `render` 符合规范。
+3. **检查会话**：当前会话可能是在插件注册前创建的。**创建新会话**（新对话），查看模型工具列表是否出现该 Tool。
+4. **检查 tools mode**：如果 `DSH_TOOLS_MODE=code`（或 `tools.config.mode === "code"`），AI 只能看到 `run_code` 一个工具，其他 Tool 被隐藏。检查 profile 的 `cordis.patch.yml` 中 tools 的 mode 配置。
+5. **检查工具过滤**：如果其他插件或 preset 调用了 `ctx.tools.restrict({allow: [...]})` 或 `ctx.tools.restrict({deny: [...]})`，可能排除了该 Tool。
+6. **检查 scope**：Tool 注册在 `ctx`（通常是全局层），但如果注册时 `ctx` 是 agent scope（如通过 `agent.ctx`），则只有该 agent 可见。
+
+**预防措施**：
+
+- 插件开发阶段，每次修改插件代码并重启 DSH Web 后，**务必创建新会话**来测试 Tool 可见性。
+- 如果不想反复创建新会话，可以在 profile 中配置 `dsh.profile.patchReload: "live"`（看 DSH 版本是否支持）。
+- 在调试阶段，在插件 `apply` 中加 `console.log('[tool registered]', toolName)` 配合浏览器 Console，确认 `ctx.tools.register` 被执行。
+- 正式发布前，在隔离 profile 中创建全新会话完成一次完整的模型调用验收。
 
 ## 最小验收命令集
 

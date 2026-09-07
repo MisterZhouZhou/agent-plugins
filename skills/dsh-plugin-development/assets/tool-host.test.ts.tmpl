@@ -1,0 +1,19 @@
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@deepseek-ai/dsh-tools', () => ({
+  defineTool: (tool: unknown) => tool,
+}))
+
+import { apply, inject, name } from '../src/index'
+
+describe('Tool 插件入口', () => {
+  it('声明 tools 依赖并注册 Tool', () => {
+    const register = vi.fn()
+    const ctx = { tools: { register } }
+
+    expect(name).toBe('__PLUGIN_NAME__')
+    expect(inject).toEqual(['tools'])
+    expect(() => apply(ctx as never, { greeting: 'Hello' })).not.toThrow()
+    expect(register).toHaveBeenCalledOnce()
+  })
+})

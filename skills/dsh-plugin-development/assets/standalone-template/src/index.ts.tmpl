@@ -1,9 +1,16 @@
+import type { Context } from '@deepseek-ai/cordis'
+import Schema from '@deepseek-ai/schemastery'
+
 export const name = '__PLUGIN_NAME__'
 
 export interface Config {
-  enabled?: boolean
+  enabled: boolean
 }
 
-export function apply(_ctx: unknown, _config: Config = {}): void {
-  // 在这里注册 Host 服务、命令或任务，并为每项注册建立清理路径。
+export const Config: Schema<Config> = Schema.object({
+  enabled: Schema.boolean().default(true),
+})
+
+export function apply(_ctx: Context, _config: Config): void {
+  // 在这里注册 Host 服务、命令或任务。通过 ctx 注册的资源会随插件卸载而清理。
 }

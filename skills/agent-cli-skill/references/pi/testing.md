@@ -47,14 +47,59 @@ pi --no-extensions --no-session --no-tools \
 
 人工验收必须看到：进程以 0 退出、收到完整 assistant 文本 `OK`（不是仅收到请求已发送/流开始）、没有未处理错误，并且 provider/model/path 与预期一致。用户中止生成、超时、只拿到 HTTP 200、只看到 JSON 事件或只验证了 `/models`，都不能宣称端到端成功。
 
-## 结果陈述模板
+## Extension 路径不存在：先区分参数错误和资源缺失
+
+遇到类似：
 
 ```text
-已完成：<静态/传输/API contract/模型/最小生成/extension/session/安全/端到端>
-证据：status=<...>, content-type=<...>, path=<脱敏>, model=<...>, exit=<...>
-未完成：<尚未验证的层>
-限制：<用户中止、无 UI、网络不可达或只进行了隔离测试等>
+Failed to load extension ".../packages/status-line": Extension path does not exist
 ```
 
-关联：Pi CLI 隔离参数见 [cli.md](cli.md)，provider contract 见 [providers.md](providers.md)，权限边界见 [permissions.md](permissions.md)。
+不要立即创建目录或修改 Pi 全局配置。先按以下顺序定位实际来源：
+
+```bash
+pwd
+fd -t d -d 3 .
+fd -t f -d 3 . | sort
+rg -n "status-line|packages/status|--extension|-e " . --hidden --glob '!node_modules/**'
+pi list
+```
+
+判断规则：
+
+- 如果报错路径来自另一个仓库，确认测试命令的 `cwd` 是否错误；例如插件仓库可能是 `/path/pi-extensions/packages/status-line`，而当前工作区是另一个 `Pi` 项目。
+- 如果项目根目录确实存在目标包，使用绝对路径或从正确仓库根目录执行，避免相对路径解析到错误位置：
+
+```bash
+cd /path/to/pi-extensions
+pi --no-extensions -e "$PWD/packages/status-line/index.ts" --no-session --help
+```
+
+- `--no-extensions` 只关闭自动发现；显式 `-e` 仍会加载指定资源。因此隔离测试时必须保留正确的 `-e`，不能把 `-ne` 当作修复路径错误。
+- 检查项目 `.pi/settings.json`、用户 `~/.pi/agent/settings.json`、package.json 的 `pi.extensions` 和 shell/IDE 启动参数；项目中没有引用时，优先怀疑旧命令或外部启动配置残留。
+- `pi list` 只能说明已安装 package，不保证某个手写 `-e` 路径存在；手写路径必须用 `test -e` 或 `fd` 单独确认。
+
+## Extension 隔离与状态栏配置验证
+
+对一个自定义状态栏扩展，验证应分层执行：
+
+```bash
+cd /path/to/pi-extensions
+node --test test/status-line.test.mjs
+npm run typecheck
+npm run validate
+npm test
+pi --no-extensions -e "$PWD/packages/status-line/index.ts" --no-session --help
+pi --no-extensions -e "$PWD/packages/status-line/index.ts" --no-session
+```
+
+交互验收至少确认：
+
+- 状态栏显示内容与配置菜单项目一一对应；不存在的功能不要放进菜单。
+- `/status` 使用持久 TUI 多选组件时，方向键移动、Enter 切换、Ctrl+S 保存、Esc 取消；勾选过程中不应反复打开 `select` 或刷新 footer。
+- 配置保存一次后，重新启动/恢复 session 能读回当前分支的配置。
+- `ctx.getContextUsage()` 的 `contextWindow` 和 `percent` 缺失时分别降级，不把未知值显示成 0。
+- 模型信息、工作目录、Git 分支、扩展状态只有在实际渲染且用户确实需要时才作为开关；“扩展状态”表示 `setStatus()` 状态，不等于扩展清单。
+
+完成声明要区分：单元测试、类型检查、扩展加载和真实 TUI 手工验收。通过 `--help` 只能证明扩展路径和模块可加载，不能证明 footer 或 `/status` 交互已经正确。
 

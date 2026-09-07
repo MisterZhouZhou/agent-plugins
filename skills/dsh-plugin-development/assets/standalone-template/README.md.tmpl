@@ -1,30 +1,51 @@
 # __PACKAGE_NAME__
 
-一个独立的 DSH 插件。
+一个独立的 DSH 插件。当前脚手架形态为 `__CAPABILITY__`；Host 入口位于 `src/index.ts`，Client 入口（若存在）位于 `src/client/index.ts`。
 
 ## 兼容性
 
 - DSH：`__DSH_RANGE__`
 - Cordis 基线：`__CORDIS_VERSION__`
+- Schemastery 基线：`__SCHEMASTERY_VERSION__`
 - 官方 Client SDK 基线：`__SDK_VERSION__`
+- dsh-tools 基线：`__TOOLS_VERSION__`（仅 Tool 能力需要）
 
-上面的版本是 **2026-09-02 调研基线**，不是永久的最新版。发布或升级前，请按宿主版本重新确认兼容 cohort。
+上面的版本是 **2026-09-03 调研基线**，不是永久的最新版。发布或升级前，请从目标 DSH 宿主的 `package.json`、lockfile、官方文档和 npm registry 重新确认同一兼容 cohort，不要只升级其中一个 alpha/rc 包。
 
-## 开发
+## 开发与质量门禁
 
 ```bash
-npm install
-npm test
-npm run typecheck
-npm run build
+pnpm install
+pnpm typecheck
+pnpm test
+pnpm build
 node /path/to/dsh-plugin-development/scripts/validate.mjs .
+npm pack --dry-run --json
 ```
 
-## 安装到本地 DSH profile
+若这是 Tool 插件，且公共 registry 暂时无法补齐 DSH 的 peer dependency cohort，可用 `pnpm install --config.auto-install-peers=false` 完成隔离单元构建。该选项只绕过 peer 自动安装，**不代表真实集成兼容**；仍须在目标 DSH 源码 checkout 或具有同一 `@deepseek-ai/*` cohort 的宿主/profile 中完成集成验证。
+
+若在 DeepSeek Harness 源码 checkout 内调试 TypeScript overlay，把插件绝对路径加入 patch，并使用：
 
 ```bash
-dsh plugin --profile web add link:/absolute/path/to/__PACKAGE_NAME__
-dsh web
+pnpm dsh web --patch /absolute/path/to/local-dev.patch.yml
 ```
 
-发布前请先执行 `npm pack`，再从生成的 tarball 安装验证。
+这条源码开发链与已安装 profile 链不同，不能互相替代。
+
+## 安装到隔离 profile
+
+先构建，然后用真实插件目录或 tarball 安装：
+
+```bash
+pnpm build
+dsh plugin --profile demo add link:/absolute/path/to/plugin-root
+# 或：dsh plugin --profile demo add /absolute/path/to/package.tgz
+
+dsh --profile demo --dump-config
+dsh --profile demo
+```
+
+`package.json` 中的 `dsh.bundle` 描述本包贡献的 patch；profile 的 `dsh.profile` 由 `dsh plugin` 创建和维护，不要在插件包内手写或把二者混为一谈。
+
+发布前请执行 `npm pack`，从生成的 tarball 重装并验证 Host/Client 加载链。正式 `npm publish` 必须在确认 package、version、registry、access、dist-tag 和 tarball 后再执行。

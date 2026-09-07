@@ -64,7 +64,7 @@ npm pack
 
 然后解包或安装实际 tarball 检查：
 
-- `lib/index.js`、`lib/client.js`（若声明 Client）、`lib/types` 和 patch 文件存在。
+- `lib/index.js`、`lib/client.js`（若声明 Client）、`lib/types`（由 `tsc -p tsconfig.build.json` 生成） 和 patch 文件存在。
 - `exports` 每个目标都能解析；`files` 没有遗漏运行时文件。
 - Client bundle 没有 Node-only 依赖和未知 external。
 - 在临时目录从 tarball 安装成功，并能 import 公共 Host/Client 入口。
