@@ -40,6 +40,7 @@ description: 从零创建、实现、测试、调试、本地安装或发布独�
 | npm 发布 | `references/publishing.md`、`references/upstream-compatibility.md` |
 | 最新兼容版本 | `references/upstream-compatibility.md`，并按联网规则重新核实 |
 | Tool 不可见/模型调不到 | `references/tool-development.md`、`references/testing-and-debugging.md` |
+| 模型推理/思考强度配置与排错 | `references/llm-adapter.md`（"模型推理配置" 节） |
 
 ## 主流程
 
