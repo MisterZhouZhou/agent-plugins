@@ -118,6 +118,38 @@ llm-pi-ai:
 
 编辑 `settings.yaml` 后需**重启 DSH** 让配置生效。若配置校验失败，DSH 会保留上次有效配置并输出错误日志。
 
+## 限流重试策略（retryPolicy）
+
+重试由内置插件 `@deepseek-ai/dsh-llm-retry` 执行，每个 provider 在 `settings.yaml` 的 `retryPolicy` 下配置——**对所有 OpenAI 兼容 provider 通用**，，与具体适配器/供应商无关（provider 返回 HTTP 429 或消息含 `rate limit` 即归一化为 `RATE_LIMIT`）。
+
+**错误归一化顺序**（`dsh-llm-pi-ai` 的 `classifyPiAiError`，先判断 quota 再判断 429）：
+
+```js
+if (isQuotaExceededError(message)) return "QUOTA";   // 在 \b429\b 检查之前！
+if (/\b429\b|rate.?limit/i.test(message)) return "RATE_LIMIT";
+```
+
+所以 `retryableCodes` 建议**同时含 `RATE_LIMIT` + `QUOTA`**：只有 `RATE_LIMIT` 时，配额型 429（消息含 `quota exceeded`）会绕过重试直接失败。
+
+
+
+**模式选择**：推荐 `mode: normal`（只重试可重试错误、有 `maxRetries` 上限）；**避免 `mode: always`**——它不看错误类型、无次数上限，持续性问题下会无限空等且不暴露错误。重试耗尽后当前 turn 直接以 error 终止（不是换策略继续），因此上限与退避上限共同决定覆盖窗口（如 `maxRetries: 15` + `maxDelayMs: 30000` ≈ 8 分钟）。指数退避：`initialDelayMs` 起步每次 ×2、、封顶 `maxDelayMs`，叠加 `jitterRatio` 抖动避免惊群。
+
+每次重试追加 `llm/retry`、`llm/retry-started` 事件，，可据此区分短暂限流（重试后恢复）与持续性问题（重试耗尽仍失败）。
+
+**RPM（每分钟请求数）限流场景调优**：RPM 与 QPS/TPM 不同，退避太激进会扎堆撞同一分钟窗口。。建议 `initialDelayMs` 2-5s、`maxDelayMs` 30-60s（< 60s，等满后退避大概率跨过分钟窗口）、`maxRetries` 10-15。。QPS/TPM 场景可收紧为 `initialDelayMs: 1000`、`maxDelayMs: 30000`。
+
+```yaml
+retryPolicy:
+  mode: normal
+  maxRetries: 10
+  retryableCodes: [RATE_LIMIT, QUOTA, TIMEOUT, SERVER, TRANSPORT]
+  backoff:
+    initialDelayMs: 2000
+    maxDelayMs:  ​45000
+    jitterRatio:  ​0.3
+```
+
 ## 测试
 
 至少覆盖：模型解析、普通文本流、tool-call 流、usage/finish 顺序、取消、非 2xx、畸形响应、未知 reasoning、限流重试以及完整 agent-loop 组合。

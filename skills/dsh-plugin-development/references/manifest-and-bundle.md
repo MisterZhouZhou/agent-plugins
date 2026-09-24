@@ -65,7 +65,8 @@ Tool 还必须声明 `@deepseek-ai/dsh-tools`，并在代码中导出 `inject: [
 | `dsh.engines.dsh` | 使用已验证的 DSH 兼容下限或范围。 | 先检查目标宿主和官方 SDK，再填写具体值；不要声称当前值永久是最新版。 |
 | `dsh.bundle.patch` | 必须是相对于 package 根目录的路径。 | `./cordis.patch.yml` 在打包后仍须存在，且文件名大小写一致。 |
 | `dsh.client.platform` | Client/Full-stack 声明目标客户端平台，例如 `web`。 | Client-only 和 Full-stack 都需要；Host-only 不应声明无用的 Client 配置。 |
-| `dsh.client.inject` | 只列出执行时确认由宿主提供的模块。 | 每个 external 都必须在宿主模块表中存在；普通第三方依赖不能因为“看起来常用”就 external。 |
+| `dsh.client.inject` | 只列「必须先于我到达」的**graph 行包名**（同样声明了 `dsh.client` 的包 id），是加载顺序约束，不是运行时模块表。 | 不要写 seed 模块（react、cordis、UI 静态库）或服务名；非基线 `require` 走 `dsh.client.external`。 |
+| `dsh.client.external` | 本 Client bundle 里 `require(...)` 的**非基线模块**请求。 | 由另一个动态 graph 行提供的包名，或平台 seed 表里的精确 key；基线模块无需声明。 |
 | `files` | 只发布运行所需的构建产物、patch、文档和许可证。 | 用 `npm pack --dry-run` 检查，不能漏掉入口、声明、source map 或 patch。 |
 
 ## 2. 按插件形态裁剪
@@ -113,6 +114,21 @@ Host 与 Client 间共享的事件名、请求/响应 DTO、schema 和纯函数�
 - `id` 是稳定的 Cordis row id。创建后不要因为改了显示名就随意重命名；否则可能造成重复挂载或旧配置无法迁移。
 - patch 只描述“如何把插件挂载进宿主”，不把业务配置、密钥或本机绝对路径写进 patch。
 - 如果宿主当前要求额外的 `inject`、配置路径或 profile 字段，先从执行时确认的宿主契约中取得，再扩展 patch；不要把某次仓库内部的隐式字段复制成通用规则。
+
+### 两条独立的挂载通道：bundle patch 与 client
+
+一个 Full-stack 插件其实有**两条互不相干的挂载通道**，排查「Host 加载了但 Client 没出现」时不要拿其中一个的成功去推断另一个：
+
+| 通道 | 触发条件 | 关键字段 |
+|---|---|---|
+| Host 半区 | 包进入 profile 的 `dsh.profile.bundles`（此时读 `dsh.bundle.patch`），或启动时用 `--patch <overlay>` 直接 `insert` | `name`（包名）、`main`/`exports["."]`、`dsh.bundle.patch` |
+| Client 半区 | **任何**已挂载的 Loader 条目，被 `dsh-client-modules` 扫描到后，解析出该包 `package.json` | `exports["./client"]`、`dsh.client.platform` |
+
+由此得到的几条硬结论：
+
+- **`--patch` overlay 只替代 `dsh.bundle.patch` 的挂载职责**，不替代 `dsh.client`。用 `--patch` 启动时 `cordis.patch.yml`（`dsh.bundle.patch`）不会被读，但 `dsh.client` + `exports["./client"]` 仍然照常被扫描——缺了它 Client 照样消失。
+- overlay 里 insert 的 `name` 必须是**包名**（`dsh-my-plugin`），不能写 TS 源码路径（`/abs/path/src/index.ts`）。写成源码路径时 Host 半区能跑（Loader 直接按文件加载），但 `dsh-client-modules` 靠条目 `name` 反查 `package.json` 会失败，Client 半区进不了 boot graph。
+- 用 `dsh --profile <p> --dump-config` 可见 Host 条目是否真的插入；Client 是否装配要看页面里的 `window.__DSH_BOOT__.entries` 是否含本包 id，以及 `/plugins/<id>/client.js` 是否 200 返回。
 
 ## 4. 入口与构建产物对照
 

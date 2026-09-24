@@ -90,6 +90,33 @@ ctx.on('my-plugin/transform', async (_input, next) => {
 
 Harness 的 Cordis 事件常用 `namespace/action`，例如 `agent/pre-step`、`tools/result`、`session/event`。`turn/*`、`step/*`、`tool/call`、`tool/result`、`compaction/*` 是持久化会话事件类型，不是同名 Cordis 事件。观察这些记录时监听 `session/event`，再检查 `event.type`；不要直接假设存在同名 `ctx.on('tool/result')` 事件。
 
+### 常用 session event 类型速查
+
+| `event.type` | 触发场景 | data 关键字段 |
+|---|---|---|
+| `turn/end` | 回合结束 | `reason.kind`: `completed` / `blocked` / `max-tokens` / `aborted` / `error` |
+| `approval/asked` | 工具需要权限确认（沙箱越权等） | `toolName`, `callId`, `reason` |
+| `approval/decided` | 权限审批结果 | `outcome`: `allowed-once` / `rejected` / `cancelled` / `unavailable` |
+| `tool/call` | 工具被调用（含 `ask_user_question`） | `name`, `arguments`, `callId` |
+| `tool/result` | 工具执行完毕 | `message`, `error` |
+| `assistant/chunk` | 流式输出片段 | `chunk` |
+| `assistant/message` | 完整助手消息 | `message`, `usage` |
+| `step/start` / `step/end` | 步骤开始/结束 | `turn`, `step` |
+
+### `approval/asked` 与 `ask_user_question` 的区别
+
+这是两个不同的事件通道，不要混用：
+
+| | `approval/asked` | `ask_user_question` |
+|---|---|---|
+| 触发方式 | `session.append("approval/asked", ...)` | `tool/call` + `name: 'ask_user_question'` |
+| 服务 | `dsh-user-approval` | `dsh-tool-ask-user` + `ctx.userQuestions` |
+| 弹窗类型 | 权限审批确认框 | 模型提问交互框 |
+| 监听方式 | `event.type === 'approval/asked'` | `event.type === 'tool/call' && data.name === 'ask_user_question'` |
+| 典型场景 | 沙箱越权、文件写入确认 | 模型通过 `ask_user_question` 向用户提问 |
+
+> **已知陷阱**：插件只监听 `approval/asked` 时，`ask_user_question` 弹窗不会触发通知。需要同时监听 `tool/call` + `name === 'ask_user_question'` 才能覆盖提问场景。
+
 ## 生命周期与测试
 
 `ctx.on()` 注册的监听器属于当前 Fiber，插件卸载时自动移除。外部 emitter 必须通过 `ctx.effect` 清理：

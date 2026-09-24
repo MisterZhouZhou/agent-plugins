@@ -168,6 +168,17 @@ npm pack
 - 条件渲染、权限、路由和配置开关是否使 UI 隐藏。
 - 是否在初始化后立即执行了卸载或清理；热重载是否留下旧实例。
 
+「设置面板看不到标签页」两个高发根因（都**不报错**，必须回读构建产物确认）：
+
+- `settings.section` 是 list 槽位，注册项缺 `id` 会被 `SlotCore` 直接拒绝 → 标签页静默不出现。典型错误是把 `slots.register` 拆成 `(spec, options, component)` 三参数形式，把 `id` 放进了第二个对象。正确形式是单对象 `register({ name, id, order, label, inject }, Component)`。
+- 注册项的 `inject` 必须是**函数**（`() => ({ scope })`），不是对象字面量。写成 `inject: { scope }` 时组件收不到注入值。
+
+确认方法：`grep -n "slots.register" dist/client.js`（或 `lib/client.js`），核对 `id` 与 `inject` 形状。
+
+### Host 报 `xxx service missing` 但服务其实在
+
+`ctx.get('settings')` 返回 undefined ≠ 服务缺失：更常见是插件 `inject` 漏了这个名字，导致 Cordis 没把服务接线进当前 fiber。先 `dsh --profile <p> --dump-config` 确认服务真的在树里，再把名字加进 `inject`（`ctx.get` 与 `ctx.<service>` 都是这个规则）。详见 `references/host-development.md`「可选服务的 ctx.get 与 inject」。
+
 ### 5. link 可运行但 tarball 失败
 
 检查：
@@ -198,6 +209,30 @@ Tool 通过 `ctx.tools.register(defineTool({...}))` 注册后，在浏览器 Con
 - 如果不想反复创建新会话，可以在 profile 中配置 `dsh.profile.patchReload: "live"`（看 DSH 版本是否支持）。
 - 在调试阶段，在插件 `apply` 中加 `console.log('[tool registered]', toolName)` 配合浏览器 Console，确认 `ctx.tools.register` 被执行。
 - 正式发布前，在隔离 profile 中创建全新会话完成一次完整的模型调用验收。
+
+## 排查工具：最小 probe 启动 + boot graph 快照
+
+不污染正式 profile 的前提下，隔离复现「Host 已加载但 client 现象不对」的最快路径：
+
+1. 复制 `~/.dsh/profiles/<profile>` 到临时 probe 目录，软链 `node_modules`（或用 `DSH_HOME` 指向临时目录）。
+2. 写一个 probe overlay 覆盖端口（`probe.yml`），随插件 overlay 一起 `--patch`：
+   ```yaml
+   - id: webserver
+     name: '@deepseek-ai/dsh-host-webserver'
+     config:
+       host: '127.0.0.1'
+       port: 3099
+   ```
+3. `DSH_HOME=<probe> HOME=<probe> dsh web --patch <插件 overlay> --patch probe.yml`。日志应出现插件 `apply` 加载行、settings namespace 注册行，以及带 token 的 URL（`http://127.0.0.1:3099/?token=...`）。
+4. 用 token 走完登录跳转拿到 cookie 后：
+   - 抓 index 页，解析 `window.__DSH_BOOT__.entries`，确认含本插件 id——这是「Client 半边是否装配」的**唯一权威判据**（不是看 Host 日志）。
+   - 抓 `/plugins/??<id>/client.js&rev=<rev>`（带 cookie），确认 200，且 wrapper 里 `id` 与包名一致、`slots.register` 的形状正确。
+5. 常见落点定位：
+   - `entries` 没有本包 → `dsh.client`/`exports["./client"]` 缺失，或 overlay 里条目 `name` 写成了源码路径而不是包名。
+   - `entries` 有本包、bundle 也 200，但 UI 不显示 → slot register 的 `id`/`inject` 形状（见故障树 #4）。
+   - Host 日志出现 `settings service missing` → 插件 `inject` 漏声明（见上方 Host 误报条目）。
+
+> 正式页面带认证：裸 `curl` 拿到 401/404 是网关表现，不代表 bundle 路由不存在；必须带 token/cookie 才能读 boot graph 和 bundle。probe 服务器用完要 kill，避免占端口。
 
 ## 最小验收命令集
 

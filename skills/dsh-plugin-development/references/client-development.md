@@ -42,13 +42,17 @@ export default defineConfig({
   platform: 'browser',
   format: ['cjs'],
   external: confirmedExternals,
-  // 用构建器支持的 intro/banner/footer 选项包裹 ModuleLoader 契约。
-  intro: 'const module = { exports: {} }; const exports = module.exports;',
+  // 用构建器支持的 banner/footer 选项包裹 ModuleLoader 契约。
+  // module/exports 必须声明在 factory 闭包内部（见下），不要用 intro 放到顶层。
   banner: {
-    js: "window.__ModuleLoader__.load({ id: '@scope/dsh-example', factory: (require) => {",
+    js: [
+      "window.__ModuleLoader__.load({ id: '@scope/dsh-example', factory: (require) => {",
+      '  const module = { exports: {} };',
+      '  const exports = module.exports;',
+    ].join('\n'),
   },
   footer: {
-    js: 'return module.exports; } });',
+    js: '  return module.exports; } });',
   },
 })
 ```
@@ -58,7 +62,8 @@ export default defineConfig({
 1. `window.__ModuleLoader__.load(...)` 注册。
 2. 与 manifest 相同的插件 `id`。
 3. `factory` 闭包和 `module.exports` 返回值。
-4. 没有把 `import` 留在只支持 CJS 的宿主加载路径中。
+4. `module`/`exports` 声明在 `factory` 闭包**内部**，没有通过 `intro` 泄漏到文件顶层（否则每个插件的 `module`/`exports` 都抢同一个顶层变量，和宿主的工厂式 CJS 形状不一致）。
+5. 没有把 `import` 留在只支持 CJS 的宿主加载路径中。
 
 ### external 策略
 
@@ -99,7 +104,104 @@ export function apply(ctx: ClientContext): void {
 
 ### Settings
 
-当用户需要配置开关、路径、连接参数或权限时使用 Settings 配置卡。设置 UI 只负责展示和提交，默认值、schema、敏感字段处理和持久化由公开 Host/Settings 协议负责。保存成功、校验失败、权限拒绝和网络失败要有独立反馈。
+当用户需要配置开关、路径、连接参数或权限时使用 Settings 配置卡。设置 UI 只负责展示和提交，默认值、schema、敏感字段处理和持久化由公开 Host/Settings 协议负责。
+
+#### `settings.section` Slot 注册
+
+注册到 `settings.section` 槽位会在 DSH Web 的「设置」面板中新增一个标签页：
+
+```ts
+// src/client/index.ts
+export const name = 'dsh-example-client'
+export const inject = ['slots', 'settingsScope'] as const
+
+export function apply(ctx: ClientContext): void {
+  // 创建 settings scope 控制器（namespace 必须与 Host 端一致）。
+  // 实际 API 是 SettingsScopeBinder.bind<T>({ namespace })，不是可调用函数
+  // ctx.settingsScope<T>({ namespace })。
+  const scope = ctx.settingsScope.bind<Record<string, boolean>>({
+    namespace: 'dsh-example',
+  })
+
+  ctx.slots.inject('settings.section', () => {
+    // SlotCore.register 只有「单对象 options + 组件」这一种两参数形式：
+    // name/id/order/label/inject 必须放在同一个对象里。
+    return ctx.slots.register(
+      {
+        name: 'settings.section',
+        id: 'dsh-example',           // 唯一 id（list 槽位缺 id 会被 SlotCore 直接拒绝）
+        order: 800,                   // 排序（越小越靠前）
+        label: '示例设置',            // 标签页名称
+        inject: () => ({ scope }),    // inject 是「函数」：返回的对象合并进组件 props
+      },
+      SettingsComponent,
+    )
+  })
+}
+```
+
+关键约束：
+- `namespace` 与 Host 端 `ctx.settings.register()` 的命名空间一致，通过 `settingsNamespace('dsh-example')` 定义。
+- `inject` 必须是**返回 props 对象的函数**（`() => ({ scope })`），不是对象字面量 `{ scope }`。写成对象字面量会静默失效：组件拿不到注入值。inject 函数返回的对象与 owner props（settings.section 的 `{ close }`）合并后传给组件。
+- **list 槽位的注册项必须有 `id`**：`SlotCore` 对没有 `id` 的 list 条目直接拒绝注册，后果是标签页**悄无声息地不出现**（不是报错）。排查「设置里看不到标签页」时第一件事是回读 `dist/client.js`/`lib/client.js`，确认 `register` 的单对象里 `id` 与 `inject` 函数形状正确。
+- 组件签名应为 `React.FC<Record<string, unknown>>`，通过 `props as unknown as MyProps` 解构 inject 值。
+- 组件需处理三种状态：`loading`（加载中）、`unavailable`（namespace 未注册）、`ready`（可读写）。
+
+#### settingsScope 读写
+
+Client 端通过 `ctx.settingsScope<T>({ namespace })` 获取控制器：
+
+```ts
+interface SettingsScope<T> {
+  getSnapshot(): SettingsScopeSnapshot<T>
+  subscribe(listener: () => void): () => void
+  set(field: string, value: unknown): Promise<void>
+  unset(field: string): Promise<void>
+}
+```
+
+| 方法 | 说明 |
+|---|---|
+| `getSnapshot()` | 获取当前快照：`{ status, value, writable, revision }` |
+| `subscribe(listener)` | 订阅变更，返回取消函数 |
+| `set(field, value)` | 异步写入单个字段，返回 Promise |
+| `unset(field)` | 清除字段，恢复继承 base 默认值 |
+
+`status` 三种状态：
+- `'loading'` — 等待首次 Host 响应，显示加载中
+- `'ready'` — 数据就绪，`writable` 为 true 时可调用 `set`/`unset`
+- `'unavailable'` — namespace 未注册或连接断开，显示降级提示
+
+#### 注入依赖
+
+Client 的 `ctx.settingsScope` 由 `@deepseek-ai/dsh-client-ui-settings` 提供，加载顺序由其 plugin 自身的 `export const inject = ['slots', 'settingsScope']` 声明；`package.json` 的 `dsh.client` 只描述包级图关系，不声明 Cordis 服务。
+
+```json
+{
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  }
+}
+```
+
+`dsh.client` 三个字段语义不同，别混用（这是排查「Client 没进 boot graph / require 报 missed the module table」的关键）：
+
+| 字段 | 含义 | 填什么 | 典型错误 |
+|---|---|---|---|
+| `platform` | 目标平台声明 | `"web"` | 缺失或拼错 → 该包直接被 `dsh-client-modules` 跳过 |
+| `inject` | 「这个 **graph 行（包名）** 必须先于我到达」的到达顺序约束 | 同样声明了 `dsh.client` 的**包名 id** | 把 `react`、服务名（`slots`/`settingsScope`）或 npm 依赖名写进来——它们不是 graph 行，会被静默忽略或产生误导 |
+| `external` | 本 bundle 里 `require(...)` 的**非基线模块**请求 | 由另一个动态 graph 行提供的包名，或 platform seed 表里的精确 key | 漏掉非基线依赖 → 运行时报 `require("...") missed the module table`；把基线模块写进去 → 冗余但通常无害 |
+
+基线（platform seed）模块**无需任何声明**即可在 bundle 里 `require`：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`，以及 UI 静态库（`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`）。它们由平台 seed 表自动解析，**不要**写进 `dsh.client.inject` 或 `dsh.client.external`。
+
+> 本清单以执行时宿主的 module 表为准（当前调查基线见 `references/upstream-compatibility.md`）；`external` 写错会导致宿主 `require` 失败，把应 external 的写成内联会造成 React/UI 多实例、bundle 膨胀。
+
+`@deepseek-ai/dsh-client-ui-settings` 由 DSH ModuleLoader 在运行时注入，无需放入 profile 的 npm 依赖。但必须加到 `devDependencies` 中以供编译时类型检查。
 
 ### 全局辅助 Chat / 悬浮 Chat
 

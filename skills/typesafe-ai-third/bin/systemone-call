@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""systemone-call — System One client for OpenCode Zen free tier.
+
+Usage:
+  echo '{"questions":{"my_q":{"type":"noul","question":"hi","instructions":"yes/no"}}}' \\
+    | systemone-call --model jev-1.13-free --state ""
+
+Configuration (resolution order):
+  1. Command-line arguments (--base-url, --api-key, --model)
+  2. Environment variables (TYPESAFE_BASE_URL, TYPESAFE_API_KEY, TYPESAFE_DEFAULT_MODEL)
+  3. Shared config file: ~/.agents/typesafe-ai-third/config.json
+  4. Built-in defaults (OpenCode Zen anonymous credential)
+
+Config file format (~/.agents/typesafe-ai-third/config.json):
+  {
+    "TYPESAFE_BASE_URL": "https://your-endpoint.example.com/v1/systemone",
+    "TYPESAFE_API_KEY": "your-api-key",
+    "TYPESAFE_DEFAULT_MODEL": "jev-1.13-free"
+  }
+
+Use --configure for interactive setup.
+
+The body schema is the canonical System One shape used by TypeSafe and OpenCode:
+  {
+    "model": "...",
+    "state": <any>,        # str | dict | {} — top-level context
+    "questions": {         # ⚠️ object keyed by question id, NOT an array
+      "<id>": {
+        "type": "choice" | "noul" | "score",   # discriminator
+        "question": "...",
+        "criteria": <per-type>,    # see below
+        "state": <optional per-question context>,
+        "instructions": "..."
+      }
+    }
+  }
+
+Per-type criteria shapes:
+  choice:  { "<label>": { "description": "..." }, ... }     (dict)
+  score:   [ { "description": "level 1" }, ... ]            (list)
+  noul:    optional                                          (probability only)
+"""
+from __future__ import annotations
+
+import argparse
+import getpass
+import hashlib
+import json
+import os
+import platform
+import re
+import secrets
+import stat
+import string
+import sys
+import time
+import urllib.request
+import urllib.error
+from pathlib import Path
+from typing import Optional
+
+# Config paths
+CONFIG_DIR = Path.home() / ".agents" / "typesafe-ai-third"
+CONFIG_PATH = CONFIG_DIR / "config.json"
+CONFIG_KEYS = ("TYPESAFE_BASE_URL", "TYPESAFE_API_KEY", "TYPESAFE_DEFAULT_MODEL")
+
+# Defaults
+DEFAULT_BASE_URL = "https://opencode.ai/zen/v1/systemone"
+DEFAULT_API_KEY = "public"
+DEFAULT_MODEL = "jev-1.13-free"
+
+ALPHA62 = string.ascii_letters + string.digits
+
+
+def die(message: str, code: int = 1) -> None:
+    print(f"Error: {message}", file=sys.stderr)
+    raise SystemExit(code)
+
+
+def warn(message: str) -> None:
+    print(f"Warning: {message}", file=sys.stderr)
+
+
+def read_config(path: Path = CONFIG_PATH) -> dict[str, str]:
+    """Read configuration from the shared config file."""
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        warn(f"Could not read config file {path}: {exc}")
+        return {}
+    if not isinstance(data, dict):
+        warn(f"Config file {path} is not a JSON object; ignoring it.")
+        return {}
+    result: dict[str, str] = {}
+    for key in CONFIG_KEYS:
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            result[key] = value.strip()
+    return result
+
+
+def write_config(values: dict[str, str], path: Path = CONFIG_PATH) -> None:
+    """Write configuration to the shared config file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {key: values[key] for key in CONFIG_KEYS if values.get(key)}
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    try:
+        path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    except Exception:
+        # Windows may not fully honor POSIX chmod; the file still lives under the user's profile.
+        pass
+    print(f"Saved typesafe-ai-third config to {path}", file=sys.stderr)
+
+
+def prompt_yes_no(question: str, *, default: bool = True) -> bool:
+    if not sys.stdin.isatty():
+        return False
+    suffix = "[Y/n]" if default else "[y/N]"
+    try:
+        answer = input(f"{question} {suffix} ").strip().lower()
+    except EOFError:
+        return False
+    if not answer:
+        return default
+    return answer in {"y", "yes"}
+
+
+def prompt_for_config(existing: dict[str, str]) -> dict[str, str]:
+    """Interactively prompt for configuration values."""
+    values = dict(existing)
+
+    if not sys.stdin.isatty():
+        die(
+            "配置缺失且当前环境无法交互输入。请任选一种方式配置：\n"
+            "  1. 设置环境变量：export TYPESAFE_API_KEY='你的密钥'\n"
+            f"  2. 创建共享配置文件：{CONFIG_PATH}\n"
+            "  3. 在交互式终端运行：systemone-call --configure"
+        )
+
+    print("typesafe-ai-third needs API configuration.", file=sys.stderr)
+    print(f"Values are saved locally under {CONFIG_PATH} if you confirm persistence.", file=sys.stderr)
+
+    if not values.get("TYPESAFE_BASE_URL"):
+        endpoint = input(f"TYPESAFE_BASE_URL (leave blank for default: {DEFAULT_BASE_URL}): ").strip()
+        if endpoint:
+            values["TYPESAFE_BASE_URL"] = endpoint
+
+    if not values.get("TYPESAFE_API_KEY"):
+        key = getpass.getpass("TYPESAFE_API_KEY (input hidden): ").strip()
+        if key:
+            values["TYPESAFE_API_KEY"] = key
+
+    if not values.get("TYPESAFE_DEFAULT_MODEL"):
+        model = input(f"TYPESAFE_DEFAULT_MODEL (leave blank for default: {DEFAULT_MODEL}): ").strip()
+        if model:
+            values["TYPESAFE_DEFAULT_MODEL"] = model
+
+    if prompt_yes_no("Persist these values for future runs?", default=True):
+        write_config(values)
+    return values
+
+
+def resolve_settings(args: argparse.Namespace) -> tuple[str, str, str, str]:
+    """Resolve settings from args, env, config, and defaults.
+
+    Returns: (base_url, api_key, model, source)
+    """
+    config = read_config(CONFIG_PATH)
+
+    # Resolution order: CLI args > env vars > config file > defaults
+    base_url = (
+        args.base_url
+        or os.getenv("TYPESAFE_BASE_URL")
+        or config.get("TYPESAFE_BASE_URL")
+        or DEFAULT_BASE_URL
+    )
+    api_key = (
+        args.api_key
+        or os.getenv("TYPESAFE_API_KEY")
+        or config.get("TYPESAFE_API_KEY")
+        or DEFAULT_API_KEY
+    )
+    model = (
+        args.model
+        or os.getenv("TYPESAFE_DEFAULT_MODEL")
+        or config.get("TYPESAFE_DEFAULT_MODEL")
+        or DEFAULT_MODEL
+    )
+
+    # Determine source for logging
+    if args.base_url or args.api_key or args.model:
+        source = "cli-args"
+    elif os.getenv("TYPESAFE_API_KEY") or os.getenv("TYPESAFE_BASE_URL"):
+        source = "environment"
+    elif config.get("TYPESAFE_API_KEY") or config.get("TYPESAFE_BASE_URL"):
+        source = "agents-config"
+    else:
+        source = "defaults"
+
+    return base_url, api_key, model, source
+
+
+def canonical_session_id(signal: str) -> str:
+    if re.match(r'^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$', signal):
+        return signal
+    h = hashlib.sha256(b"ses\x00" + signal.encode()).digest()
+    time_part = h[:6].hex()
+    n = int.from_bytes(h[6:16], 'big')
+    digits = []
+    for _ in range(14):
+        n, r = divmod(n, 62)
+        digits.append(ALPHA62[r])
+    return "ses_" + time_part + "".join(digits)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="OpenCode Zen System One caller",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Configuration resolution order:
+  1. CLI arguments (--base-url, --api-key, --model)
+  2. Environment variables (TYPESAFE_BASE_URL, TYPESAFE_API_KEY, TYPESAFE_DEFAULT_MODEL)
+  3. Config file: ~/.agents/typesafe-ai-third/config.json
+  4. Built-in defaults
+
+Use --configure for interactive setup.
+        """
+    )
+    ap.add_argument("--model", help="Model to use (default: jev-1.13-free)")
+    ap.add_argument("--state", default="", help="Top-level state/context")
+    ap.add_argument("--session-signal", default="opencode-cli", help="Session identifier")
+    ap.add_argument("--base-url", help="API endpoint URL")
+    ap.add_argument("--api-key", help="API authentication key")
+    ap.add_argument("--retries", type=int, default=2, help="Number of retries on failure")
+    ap.add_argument("--configure", action="store_true", help="Interactively configure API settings and save to config file")
+    ap.add_argument("--show-config", action="store_true", help="Show current configuration source and values (key masked)")
+    ap.add_argument("--dry-run", action="store_true", help="Print resolved config without making API call")
+    args = ap.parse_args()
+
+    # Handle --configure
+    if args.configure:
+        config = read_config(CONFIG_PATH)
+        values = prompt_for_config(config)
+        print("\nConfiguration saved. Current values:")
+        print(f"  TYPESAFE_BASE_URL: {values.get('TYPESAFE_BASE_URL') or DEFAULT_BASE_URL}")
+        print(f"  TYPESAFE_API_KEY: {'***' if values.get('TYPESAFE_API_KEY') else '(using default)'}")
+        print(f"  TYPESAFE_DEFAULT_MODEL: {values.get('TYPESAFE_DEFAULT_MODEL') or DEFAULT_MODEL}")
+        return 0
+
+    # Resolve settings
+    base_url, api_key, model, source = resolve_settings(args)
+
+    # Handle --show-config
+    if args.show_config:
+        print(json.dumps({
+            "config_source": source,
+            "config_path": str(CONFIG_PATH),
+            "TYPESAFE_BASE_URL": base_url,
+            "TYPESAFE_API_KEY": "***" if api_key and api_key != DEFAULT_API_KEY else "(default)",
+            "TYPESAFE_DEFAULT_MODEL": model,
+        }, ensure_ascii=False, indent=2))
+        return 0
+
+    # Read request body from stdin
+    try:
+        body = json.load(sys.stdin)
+    except Exception as exc:
+        print(f"failed to read body from stdin: {exc}", file=sys.stderr)
+        return 2
+
+    body.setdefault("model", model)
+    if "state" not in body:
+        body["state"] = args.state
+    body.setdefault("questions", {})
+
+    # Normalize URL
+    base = base_url.rstrip("/")
+    if not base.endswith("/v1/systemone"):
+        if base.endswith("/systemone"):
+            url = base
+        else:
+            url = base + "/v1/systemone"
+    else:
+        url = base
+
+    # Build headers
+    sess = canonical_session_id(args.session_signal)
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    machine = {"x86_64": "amd64", "aarch64": "arm64"}.get(machine, machine)
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "Authorization": "Bearer " + api_key,
+        "Content-Type": "application/json",
+        "User-Agent": f"opencode/1.18.31 ({system} {machine}; python)",
+        "x-opencode-client": "cli",
+        "x-opencode-session": sess,
+        "x-session-affinity": sess,
+        "X-Session-Id": sess,
+        "x-opencode-request": "req_" + secrets.token_hex(16),
+        "x-opencode-project": "prj_" + secrets.token_hex(12),
+    }
+
+    payload = json.dumps(body).encode()
+
+    # Handle --dry-run
+    if args.dry_run:
+        print(json.dumps({
+            "base_url": url,
+            "model": model,
+            "config_source": source,
+            "has_api_key": bool(api_key),
+            "request_preview": body,
+        }, ensure_ascii=False, indent=2))
+        return 0
+
+    # Make request with retries
+    last_err = None
+    for attempt in range(args.retries + 1):
+        # Rotate request id per attempt
+        headers["x-opencode-request"] = "req_" + secrets.token_hex(16)
+        req = urllib.request.Request(url, data=payload, method="POST", headers=dict(headers))
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                sys.stdout.write(r.read().decode())
+                return 0
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode(errors="replace")
+            last_err = f"HTTP {e.code}: {err_body}"
+            print(f"attempt {attempt+1} failed: {last_err}", file=sys.stderr)
+            if 400 <= e.code < 500 and e.code not in (408, 425, 429):
+                # client-side error, retrying unlikely to help
+                break
+        except urllib.error.URLError as e:
+            last_err = f"URLError: {e}"
+            print(f"attempt {attempt+1} failed: {last_err}", file=sys.stderr)
+        # exponential backoff
+        if attempt < args.retries:
+            time.sleep(0.6 * (2 ** attempt))
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

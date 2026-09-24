@@ -218,3 +218,100 @@ Host 测试应围绕公开行为，而不是内部字段或真实 DSH 进程。�
 [ ] stop/dispose 后监听器、定时器和子进程均被清理
 [ ] 相同插件不能因热重载重复注册
 ```
+
+## 8. Settings namespace：为 Client 设置面板暴露配置
+
+当插件需要在 DSH Web 中提供可视化设置面板时，Host 端应注册 settings 命名空间，Client 端通过 `settingsScope` 读写。
+
+### 注册命名空间
+
+```ts
+import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+
+export const name = 'dsh-example'
+export const inject = ['settings']  // 需要 settings 服务
+
+const EXAMPLE_NS = settingsNamespace('dsh-example')  // 命名空间 = 插件名
+
+export function apply(ctx: Context, config: Config): void {
+  // 注册命名空间，Client 端通过 settingsScope({ namespace: 'dsh-example' }) 访问
+  const scope = ctx.settings.register(EXAMPLE_NS, Schema.object({
+    mySwitch: Schema.boolean().default(true),
+  }), {
+    base: { mySwitch: true },   // 组合层默认值
+    applies: 'live',            // 'live' = 即时生效；'restart' = 需重启
+  })
+
+  // 将 YAML 配置值写为初始用户覆盖（使面板显示实际生效状态）
+  if (config.mySwitch !== undefined) {
+    scope.update({ mySwitch: config.mySwitch })
+  }
+}
+```
+
+### 使用 watch() 响应设置变更
+
+Client 端 `scope.set(field, value)` 写入后，Host 端通过 `watch()` 获取实时更新：
+
+```ts
+// 用闭包变量追踪最新值
+let liveConfig = scope.get()
+scope.watch((next) => {
+  liveConfig = next
+})
+
+// 在事件处理器中读取 liveConfig
+ctx.on('session/event', (session, event) => {
+  const current = liveConfig  // 始终为最新值
+  if (!current.mySwitch) return
+  // ...
+})
+```
+
+| API | Host 端 | Client 端 |
+|---|---|---|
+| 获取当前值 | `scope.get(): T` | `scope.getSnapshot(): SettingsScopeSnapshot<T>` |
+| 写入 | `scope.update(patch): Promise<void>` | `scope.set(field, value): Promise<void>` |
+| 订阅变更 | `scope.watch((next, prev) => ...)` | `scope.subscribe(() => ...)` |
+| 清除覆盖 | `scope.replace(section): Promise<void>` | `scope.unset(field): Promise<void>` |
+| 注册 | `ctx.settings.register(ns, schema, opts)` | — |
+
+> **注意**：Host 端用 `watch`，Client 端用 `subscribe`，方法名不同。
+
+### tsdown external 配置
+
+`@deepseek-ai/dsh-settings` 和 `@deepseek-ai/cordis` 由 DSH 运行时提供，必须在 tsdown Host 构建中设为 external：
+
+```ts
+// tsdown.config.ts
+export default defineConfig([
+  {
+    entry: ['src/index.ts'],
+    format: ['esm'],
+    outDir: 'lib',
+    clean: true,
+    external: ['@deepseek-ai/cordis', '@deepseek-ai/dsh-settings'],
+  },
+  // ... client entry
+])
+```
+
+**不 external 的后果**：`settingsNamespace()` 生成的 branded string 与 DSH 运行时的副本不匹配，导致 `ctx.settings.register()` 静默失败，Client 端 `settingsScope` 始终返回 `status: 'unavailable'`。
+
+### 可选服务的 `ctx.get` 与 inject：别被 “xxx service missing” 骗了
+
+当 `apply` 里用 `ctx.get('settings')` 读一个服务时，如果插件 `inject` 里**没有**这个名字，`ctx.get` 会稳定返回 `undefined`——这不是“服务不存在”，而是 Cordis 没有把该服务接线进当前 fiber。把服务名加进 `inject` 后既能拿到实现，也让 Cordis 等到它就绪才调用 `apply`。
+
+已验证的签名（宿主 profile 树里确实挂载了 `settings` 服务时）：
+
+| 写法 | 结果 |
+|---|---|
+| `inject = ['tools']` + `ctx.get('settings')` | `undefined`（打印 “settings service missing” 的误报来源） |
+| `inject = ['tools', 'settings']` + `ctx.get('settings')` | 拿到实现，且 `apply` 晚于 settings 就绪执行 |
+
+排查顺序：
+
+1. 先确认服务确实在 profile 树里（`dsh --profile <p> --dump-config` 应能看到对应 `- id: ...  name: '...'` 行）。
+2. 确认后把服务名加进 `inject`，而不是手写 `if (service === undefined) warn(...)` 的“防御”分支——那只会掩盖漏声明的依赖。
+
+只有真正可能缺失、且缺失属于正常降级场景的服务，才用 `ctx.get` 并显式定义缺失行为；其余通过 `inject` 声明的服务应当直接用 `ctx.<serviceName>`，不要再做 undefined 空转。

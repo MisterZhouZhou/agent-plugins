@@ -83,6 +83,15 @@
         "./skills/agent-cli-skill",
         "./skills/tempermonkey-skill"
       ]
+    },
+    {
+      "name": "typesafe-skills",
+      "description": "TypeSafe AI skills with configurable API endpoint",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/typesafe-ai-third"
+      ]
     }
   ]
 }
