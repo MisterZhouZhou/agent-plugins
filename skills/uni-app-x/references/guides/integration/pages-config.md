@@ -60,6 +60,56 @@ Use custom navigation when the page implements its own header component:
 
 When custom navigation is used, handle safe-area spacing and status bar differences per platform.
 
+## Navigation bar buttons
+
+uni-app x has no pages.json config for navigation bar buttons. `app-plus.titleNView.buttons` was removed together with all other app-plus-only config, and the remaining `h5.titleNView.buttons` works on Web only. Do not use either one, including on Web-only pages; use the same custom navigation approach on every platform.
+
+For a header action button on any platform, combine `navigationStyle: "custom"` with the uni-nav-bar component and its `#right` slot:
+
+```vue
+<template>
+  <view class="page">
+    <uni-nav-bar title="Home" fixed left-icon="left" @clickLeft="goBack">
+      <template #right>
+        <text class="nav-btn" @click="onAction">Button</text>
+      </template>
+    </uni-nav-bar>
+
+    <scroll-view class="content" direction="vertical">
+      <!-- page content -->
+    </scroll-view>
+  </view>
+</template>
+
+<script setup lang="uts">
+const onAction = () => {
+  console.log("right button clicked")
+}
+
+const goBack = () => {
+  uni.navigateBack()
+}
+</script>
+
+<style>
+.content {
+  flex: 1;
+}
+
+.nav-btn {
+  font-size: 14px;
+  color: #007AFF;
+  padding: 0 8px;
+}
+</style>
+```
+
+Notes:
+
+- Pair the page with `"disableScroll": true` and scroll inside `<scroll-view>` so bounce or pull-down does not shift the fixed bar.
+- `fixed` on uni-nav-bar handles the status-bar height automatically; no manual `--status-bar-height` padding is needed.
+- On MP-WEIXIN, keep `#right` content clear of the capsule button: read `uni.getMenuButtonBoundingClientRect()` and offset the slot with `margin-right`.
+
 ## tabBar
 
 ```json

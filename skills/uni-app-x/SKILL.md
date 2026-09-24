@@ -1,6 +1,6 @@
 ---
 name: uni-app-x
-description: "Develop, debug, migrate, and structure uni-app x projects using UTS, UVue, UCSS, pages.json, manifest.json, uni APIs, platform conditional compilation, and UTS plugins. Use this skill whenever the user mentions uni-app x, .uvue, .uts, UTS, UVue, DCloud, HBuilderX, native cross-platform apps, or needs Android/iOS/HarmonyOS/Web/Mini Program behavior handled in one codebase."
+description: "Develop, debug, migrate, and structure uni-app x projects using UTS, UVue, UCSS, pages.json, manifest.json, uni APIs, platform conditional compilation, and UTS plugins. Covers custom navigation bars and navigation bar buttons (uni-nav-bar #right slot; titleNView.buttons is unsupported). Use this skill whenever the user mentions uni-app x, .uvue, .uts, UTS, UVue, DCloud, HBuilderX, native cross-platform apps, custom navbars or navigation bar buttons, or needs Android/iOS/HarmonyOS/Web/Mini Program behavior handled in one codebase."
 ---
 
 # uni-app x Development Skill
@@ -78,7 +78,7 @@ Choose the smallest relevant reference file before editing code:
    - Load `references/features/api-request.md` for request data handling with UTSJSONObject/type generics, streaming, and App limitations.
    - Load `references/features/api-event-system-info.md` for event bus (uni.$on/$emit), launch options, and system info.
    - Load `references/features/api-overview.md` for API source overview (UTS built-in, global, uni.xxx, DOM, Vue, native).
-   - Load `references/guides/integration/navigation.md` for page routing, tabBar, query params, and custom navigation behavior.
+   - Load `references/guides/integration/navigation.md` for page routing, tabBar, query params, and back behavior. For custom navigation bars and navigation bar buttons, load `references/guides/integration/pages-config.md` ("Navigation bar buttons" section).
    - Load `references/guides/integration/uni-api.md` for request/loading/storage/upload/location API flows with typed UVue state.
 
 7. **Platform-specific behavior**
@@ -129,6 +129,7 @@ Choose the smallest relevant reference file before editing code:
 - UTS has no `undefined`; initialize values and use `null`.
 - Conditions must be boolean: write `if (value != null)` and `if (list.length > 0)`.
 - App layout supports a restricted UCSS subset; use class selectors and flex layouts.
+- uni-app x has no pages.json config for navigation bar buttons: `app-plus.titleNView.buttons` is removed and `h5.titleNView.buttons` is Web-only. Do not use them anywhere, including on Web-only pages. For header buttons on any platform, set `navigationStyle: "custom"`, add `disableScroll: true`, scroll in `<scroll-view>`, and render the button in uni-nav-bar's `#right` slot.
 - HarmonyOS supports `border-style: dashed`, but real devices may render vertical single-side dashed borders such as `border-left-style: dashed` as a solid line in thin guide-line scenarios. For Tianzi grid internal cross lines, keep the horizontal guide as `border-top-style: dashed`; draw the vertical guide as an equal-length horizontal dashed border and rotate it 90 degrees with `transform: rotate(90deg)` and `transform-origin: center`. Do not claim `dashed` is unsupported; document it as a HarmonyOS real-device rendering workaround and verify on device.
 - Static images, fonts, and media belong in `/static/`; do not put `.uts` or `.css` files there.
 - When images disappear only on HarmonyOS devices, first verify the asset exists, path case matches exactly, the path is absolute under `/static/`, and the compiler can discover it. Prefer static `src="/static/..."` for fixed UI assets instead of dynamic `:src` when possible.
@@ -323,7 +324,7 @@ Choose the smallest relevant reference file before editing code:
 - `references/features/pdf-export.md` - offline PDF export via Hybrid WebView + jsPDF (Chinese support, HarmonyOS-safe)
 
 ### Integration Guides
-- `references/guides/integration/pages-config.md` - page style, tabBar, pull-down refresh, and conditional page config
+- `references/guides/integration/pages-config.md` - page style, tabBar, pull-down refresh, navigation bar buttons (uni-nav-bar #right slot), and conditional page config
 - `references/guides/integration/manifest-config.md` - H5, App, HarmonyOS, and Mini Program manifest fields
 - `references/guides/integration/navigation.md` - navigation, tabBar routing, params, and back behavior
 - `references/guides/integration/uni-api.md` - typed API flows for network, storage, upload, location, and UI state
@@ -378,4 +379,4 @@ Choose the smallest relevant reference file before editing code:
 
 ## Keywords
 
-uni-app-x, uniapp x, uni-app x, UTS, UVue, uvue, ucss, DCloud, HBuilderX, `main.uts`, `App.uvue`, `pages.json`, `manifest.json`, `uni_modules`, Android, iOS, HarmonyOS, Web, Mini Program, 小程序, 跨平台, 条件编译
+uni-app-x, uniapp x, uni-app x, UTS, UVue, uvue, ucss, DCloud, HBuilderX, `main.uts`, `App.uvue`, `pages.json`, `manifest.json`, `uni_modules`, Android, iOS, HarmonyOS, Web, Mini Program, 小程序, 跨平台, 条件编译, uni-nav-bar, titleNView, 自定义导航栏, 导航栏按钮, navbar
