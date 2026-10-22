@@ -93,6 +93,10 @@ npm view @deepseek-ai/dsh-tools version peerDependencies --json
 - 将已验证组合写入 package.json、README 和兼容矩阵；未验证版本标记为候选。
 - 协议变化优先在 Core 层增加版本/能力协商或迁移逻辑，不在 Client 中猜测 Host 行为。
 
+分别记录插件开发依赖/lockfile 的编译版本和实际 DSH 进程提供的运行时版本；插件 node_modules 可能仍是 `0.1.x`，宿主已经升级到 `0.2.0-rc.2`。类型检查通过不证明目标宿主提供同名服务。离线安装找不到精确版本也不证明 registry 未发布，先区分缓存/元数据不足与真实 registry 响应。
+
+`0.2.0-rc.2` 设置修复中检查过的组合为 DSH/settings/ui-settings `0.2.0-rc.2`、Cordis `4.0.4`、Schemastery `3.18.4`；Client 改用 `configForms.get(entryId)`，Host 只投影 Config 的 volatile 字段。具体迁移和已验证范围见 [设置迁移参考](settings-0.2-migration.md)。不要因此直接上调全部脚手架默认版本，其他能力仍须逐项验证。
+
 ## 高风险兼容点
 
 ### Client closure factory / ModuleLoader
@@ -128,14 +132,18 @@ npm view @deepseek-ai/dsh-tools version peerDependencies --json
 DSH 仓库/分支/提交：
 Node/pnpm：
 @deepseek-ai/* cohort：
+插件编译依赖及 lockfile 版本：
+实际宿主运行时包版本及服务名：
 宿主提供的 Client externals：
 Config schema：
+Settings entry id / volatile 字段 / Client API：
 Tool/Service/LLM API：
 patch 字段与来源：
 源码 overlay smoke：
 link profile smoke：
 本地 tarball smoke：
 registry tarball smoke：
+浏览器交互及持久化（已通过/未执行/受阻原因）：
 已知不兼容项：
 ```
 

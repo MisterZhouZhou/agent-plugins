@@ -30,11 +30,15 @@ description: 从零创建、实现、测试、调试、本地安装或发布独�
 | Tool 能力 | `references/tool-development.md`、`references/services-and-dependencies.md` |
 | Service 或依赖 | `references/services-and-dependencies.md`、`references/capability-seams.md` |
 | Client UI | `references/client-development.md` |
-| 会话菜单/会话详情操作 | `references/client-development.md`、`references/session-ui-features.md` |
+| Config 设置面板、设置不可用、迁移 DSH 0.2.0-rc.2 | `references/settings-0.2-migration.md`，并按需读取 Host/Client 开发规范 |
+| 会话菜单/会话详情操作（含删除、刷新/重新生成） | `references/client-development.md`、`references/session-ui-features.md`（刷新/重新生成看 §3.5 就地回退路径） |
+| 消息行操作按钮、菜单/模式浮层、引擎命令通道 | `references/session-ui-features.md`（第 7 节起） |
+| 会话视图滚动/吸顶/视口判定类 DOM 逻辑（sticky bar、滚出检测） | `references/session-ui-features.md` §7.9（rewind 隐藏行 rect 全零是幽灵吸顶源） |
 | 全局辅助 Chat/独立悬浮 Chat | `references/client-development.md`、`references/global-inline-chat.md` |
 | 事件、生命周期、HMR | `references/events.md`、`references/cordis-lifecycle.md` |
 | LLM Adapter | `references/llm-adapter.md`、`references/services-and-dependencies.md` |
 | 测试或故障排查 | `references/testing-and-debugging.md` |
+| Client UI 实机调试（按钮/抖动/闪烁） | `references/testing-and-debugging.md`（"浏览器实机调试" 节） |
 | 发布前静态校验 | `scripts/validate.mjs`、`references/testing-and-debugging.md` |
 | 本地安装 | `references/local-installation.md` |
 | npm 发布 | `references/publishing.md`、`references/upstream-compatibility.md` |
@@ -72,6 +76,7 @@ node "$SKILL_DIR/scripts/scaffold.mjs" \
 
 - 运行时代码只使用公开 SDK；不深度导入 DSH 源码或 `dsh-web/shared/*` 私有路径。
 - Config 若声明了 `interface/type Config`，必须同时导出同名运行时 Schemastery schema；默认值写在 schema，不写成普通对象。
+- DSH `0.2.0-rc.2` 的设置表单来自 Config 的 volatile 字段，namespace 为 profile entry id；Client 使用 `configForms.get(entryId)`。不要套用旧的手工 namespace 注册或 `webUiSettings.bind()`；详见版本迁移参考。
 - Tool 必须使用 `@deepseek-ai/dsh-tools` 的 `defineTool`，声明 `inject = ['tools']`，注册到 `ctx.tools`，并校验参数、规范输出、render、失败和取消。
 - Service Consumer 只依赖 Definition/公开服务，不读取 Provider 私有字段；可选服务使用 `ctx.get` 并定义缺失行为。
 - 函数、对象、类三种插件形态共享同一生命周期规则：对象形式不是 Service，类形式的服务名、类型声明与 Consumer `inject` 必须一致。

@@ -106,6 +106,8 @@ export function apply(ctx: ClientContext): void {
 
 当用户需要配置开关、路径、连接参数或权限时使用 Settings 配置卡。设置 UI 只负责展示和提交，默认值、schema、敏感字段处理和持久化由公开 Host/Settings 协议负责。
 
+以下设置示例适用于 DSH `0.2.0-rc.2`。旧的 `webUiSettings.bind()` / settingsScope 接口不适用于该版本；迁移步骤和 Host volatile 配置见 [设置迁移参考](settings-0.2-migration.md)。
+
 #### `settings.section` Slot 注册
 
 注册到 `settings.section` 槽位会在 DSH Web 的「设置」面板中新增一个标签页：
@@ -113,15 +115,11 @@ export function apply(ctx: ClientContext): void {
 ```ts
 // src/client/index.ts
 export const name = 'dsh-example-client'
-export const inject = ['slots', 'settingsScope'] as const
+export const inject = ['slots', 'configForms'] as const
 
 export function apply(ctx: ClientContext): void {
-  // 创建 settings scope 控制器（namespace 必须与 Host 端一致）。
-  // 实际 API 是 SettingsScopeBinder.bind<T>({ namespace })，不是可调用函数
-  // ctx.settingsScope<T>({ namespace })。
-  const scope = ctx.settingsScope.bind<Record<string, boolean>>({
-    namespace: 'dsh-example',
-  })
+  // 参数是 Host profile entry id；Host Config 必须包含 volatile 字段。
+  const scope = ctx.configForms.get<Record<string, boolean>>('dsh-example')
 
   ctx.slots.inject('settings.section', () => {
     // SlotCore.register 只有「单对象 options + 组件」这一种两参数形式：
@@ -141,40 +139,38 @@ export function apply(ctx: ClientContext): void {
 ```
 
 关键约束：
-- `namespace` 与 Host 端 `ctx.settings.register()` 的命名空间一致，通过 `settingsNamespace('dsh-example')` 定义。
+- `get(entryId)` 的参数与 Host profile 的 `entry.options.id` 一致。SettingsForms 从 Config 自动投影 volatile 字段，无需手动注册 namespace。
 - `inject` 必须是**返回 props 对象的函数**（`() => ({ scope })`），不是对象字面量 `{ scope }`。写成对象字面量会静默失效：组件拿不到注入值。inject 函数返回的对象与 owner props（settings.section 的 `{ close }`）合并后传给组件。
 - **list 槽位的注册项必须有 `id`**：`SlotCore` 对没有 `id` 的 list 条目直接拒绝注册，后果是标签页**悄无声息地不出现**（不是报错）。排查「设置里看不到标签页」时第一件事是回读 `dist/client.js`/`lib/client.js`，确认 `register` 的单对象里 `id` 与 `inject` 函数形状正确。
 - 组件签名应为 `React.FC<Record<string, unknown>>`，通过 `props as unknown as MyProps` 解构 inject 值。
-- 组件需处理三种状态：`loading`（加载中）、`unavailable`（namespace 未注册）、`ready`（可读写）。
+- 组件需处理 `loading`、`unavailable`、`ready` 三种状态；`ready` 仍需检查 `writable` 后才允许修改。
 
-#### settingsScope 读写
+#### configForms 读写
 
-Client 端通过 `ctx.settingsScope<T>({ namespace })` 获取控制器：
+Client 通过 `ctx.configForms.get<T>(entryId)` 获取控制器，公开类型从 Settings 包 type-only 导入：
 
 ```ts
-interface SettingsScope<T> {
-  getSnapshot(): SettingsScopeSnapshot<T>
-  subscribe(listener: () => void): () => void
-  set(field: string, value: unknown): Promise<void>
-  unset(field: string): Promise<void>
-}
+import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 ```
 
 | 方法 | 说明 |
 |---|---|
-| `getSnapshot()` | 获取当前快照：`{ status, value, writable, revision }` |
+| `getSnapshot()` | 获取当前快照，含 `status/value/base/user/writable/revision/mode` |
 | `subscribe(listener)` | 订阅变更，返回取消函数 |
-| `set(field, value)` | 异步写入单个字段，返回 Promise |
+| `set(field, value)` | 异步写入单个根字段，返回 `Promise<boolean>` |
 | `unset(field)` | 清除字段，恢复继承 base 默认值 |
+| `mutate(ops, expectedRevision?)` | 原子路径操作，可修改嵌套字段；返回 `Promise<boolean>` |
 
 `status` 三种状态：
 - `'loading'` — 等待首次 Host 响应，显示加载中
 - `'ready'` — 数据就绪，`writable` 为 true 时可调用 `set`/`unset`
-- `'unavailable'` — namespace 未注册或连接断开，显示降级提示
+- `'unavailable'` — namespace 未向该连接暴露，或连接采用 memory 模式；不能据此断言插件未启用
+
+保持 Config 的字段层级：若开关在 `events` 内，读取 `snapshot.value?.events`，使用 `set('events', nextEvents)` 或路径为 `['events', key]` 的 `mutate()`。不要把子字段当作根字段写入。处理写入返回 false 和传输 reject。
 
 #### 注入依赖
 
-Client 的 `ctx.settingsScope` 由 `@deepseek-ai/dsh-client-ui-settings` 提供，加载顺序由其 plugin 自身的 `export const inject = ['slots', 'settingsScope']` 声明；`package.json` 的 `dsh.client` 只描述包级图关系，不声明 Cordis 服务。
+Client 的 `ctx.configForms` 由 `@deepseek-ai/dsh-client-ui-settings` 提供。插件的 `export const inject = ['slots', 'configForms']` 声明 Cordis 服务依赖；`package.json` 的 `dsh.client.inject` 描述包级图关系，不声明服务。
 
 ```json
 {
@@ -182,6 +178,7 @@ Client 的 `ctx.settingsScope` 由 `@deepseek-ai/dsh-client-ui-settings` 提供�
     "client": {
       "platform": "web",
       "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-ui-settings"
       ]
     }
@@ -194,7 +191,7 @@ Client 的 `ctx.settingsScope` 由 `@deepseek-ai/dsh-client-ui-settings` 提供�
 | 字段 | 含义 | 填什么 | 典型错误 |
 |---|---|---|---|
 | `platform` | 目标平台声明 | `"web"` | 缺失或拼错 → 该包直接被 `dsh-client-modules` 跳过 |
-| `inject` | 「这个 **graph 行（包名）** 必须先于我到达」的到达顺序约束 | 同样声明了 `dsh.client` 的**包名 id** | 把 `react`、服务名（`slots`/`settingsScope`）或 npm 依赖名写进来——它们不是 graph 行，会被静默忽略或产生误导 |
+| `inject` | 「这个 **graph 行（包名）** 必须先于我到达」的到达顺序约束 | 同样声明了 `dsh.client` 的**包名 id** | 把 `react`、服务名（`slots`/`configForms`）或非 graph 包写进来——它们不是 graph 行，会被静默忽略或产生误导 |
 | `external` | 本 bundle 里 `require(...)` 的**非基线模块**请求 | 由另一个动态 graph 行提供的包名，或 platform seed 表里的精确 key | 漏掉非基线依赖 → 运行时报 `require("...") missed the module table`；把基线模块写进去 → 冗余但通常无害 |
 
 基线（platform seed）模块**无需任何声明**即可在 bundle 里 `require`：`react`、`react/jsx-runtime`、`react-dom`、`react-dom/client`、`@deepseek-ai/cordis`，以及 UI 静态库（`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`）。它们由平台 seed 表自动解析，**不要**写进 `dsh.client.inject` 或 `dsh.client.external`。

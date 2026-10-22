@@ -128,9 +128,23 @@ npm pack
 5. 页面/Slot/设置入口出现，调用 Host 后返回预期结果。
 6. 重载、卸载和再次安装后没有重复 UI、事件或服务。
 
+## DSH 宿主启动报错（先于插件排查）
+
+`dsh: startup failed: N required plugins did not activate` 或启动即退，常见以下几类与宿主/环境相关，先于插件代码排查：
+
+1. **webserver `host "0.0.0.0" is an unspecified (wildcard) address ... not supported`**：0.2.x 拒绝通配地址（会把远程代码执行暴露到网络）。把 profile 的 webserver `host` 改成具体地址：`127.0.0.1` 仅本机；要局域网访问再另行评估暴露风险。
+2. **webserver `listen EADDRINUSE ... :3080`**：端口被占，多为**重复启动**——已有一个 dsh 实例在跑，又起了一个。先 `pgrep -fl "dsh --profile web"` 和 `lsof -nP -iTCP:3080 -sTCP:LISTEN` 定位占用者，结束旧实例再启动。典型误判：新实例打印 `startup failed`，但**旧实例其实健康、Web UI 仍可访问**——别据此以为代码坏了而反复重启。保持单实例，别在已有实例活着时再敲启动命令。
+3. **`SyntaxError: ... does not provide an export named 'X'`**：ESM 命名导出的**版本 gap**——插件的 `@deepseek-ai/dsh-tools` 等 SDK 与 dsh 运行时 cohort 不一致，上游改名/删除了某导出（例：`dsh-tools@0.1.x` 里 `import { CallId }`，而 `dsh-llm@0.2.x` 只导出 `ToolCallId`）。把 SDK 依赖对齐到运行时版本（如运行时 `0.2.1-rc.2` 就把 `dsh-tools` 固定到 `0.2.1-rc.2`）后重装重建。
+
+附：`dsh: skipping profile bundle "<pkg>": ... incompatible with dsh 0.2.1-rc.2: requirements {...}` 且 `Exact-version exemption: not active`，是该 bundle 的 peerDependencies 只兼容 0.1.x，被宿主**跳过**。它**不阻塞启动**，但该插件及其贡献的 slot 不生效，可能连带 `slot "..." is not declared` 警告（如 better-sidebar 被 skip 后其他插件往它声明的槽位注册被拒）。要启用需升级该插件或用 `dsh plugin allow-version` 授权 exact-version。
+
 ## 固定故障树
 
 遇到“插件不可用”时按加载链路逐层定位，不要一开始修改业务代码。
+
+### 设置页可见但提示 unavailable（0.2.0-rc.2）
+
+先核对实际 Host/profile 和编译依赖版本，再核对 Host entry id、运行状态和 Config 的 volatile 字段。Client 使用 `configForms.get(entryId)`；检查实际 lib 是否仍有旧 `webUiSettings.bind()`，并确认嵌套字段读写和连接 mode。标签页存在不能证明 Host 表单存在，源码正确不能证明加载产物正确。完整顺序及验证案例见 [设置迁移参考](settings-0.2-migration.md)。
 
 ### 1. Host 与 Client 都未加载
 
@@ -223,9 +237,9 @@ Tool 通过 `ctx.tools.register(defineTool({...}))` 注册后，在浏览器 Con
        host: '127.0.0.1'
        port: 3099
    ```
-3. `DSH_HOME=<probe> HOME=<probe> dsh web --patch <插件 overlay> --patch probe.yml`。日志应出现插件 `apply` 加载行、settings namespace 注册行，以及带 token 的 URL（`http://127.0.0.1:3099/?token=...`）。
+3. 用任务专用临时目录设置 `DSH_HOME=<probe>`，执行 `dsh web --patch <插件 overlay> --patch probe.yml`；先确认目标 CLI 支持该隔离方式。检查插件加载状态与本地访问 URL，不要求必有某条 `apply` 或 namespace 注册日志。对 `0.2.0-rc.2` 设置表单，应在认证连接的 `settings.describe()` 返回中核对目标 `ns` 和字段；不要通过改写 HOME 混用临时 profile 与用户环境。
 4. 用 token 走完登录跳转拿到 cookie 后：
-   - 抓 index 页，解析 `window.__DSH_BOOT__.entries`，确认含本插件 id——这是「Client 半边是否装配」的**唯一权威判据**（不是看 Host 日志）。
+   - 抓 index 页，解析 `window.__DSH_BOOT__.entries`，确认含本插件 id；这证明已进入 Client 启动装配图，执行、服务注入和 UI 行为仍需另行验证。
    - 抓 `/plugins/??<id>/client.js&rev=<rev>`（带 cookie），确认 200，且 wrapper 里 `id` 与包名一致、`slots.register` 的形状正确。
 5. 常见落点定位：
    - `entries` 没有本包 → `dsh.client`/`exports["./client"]` 缺失，或 overlay 里条目 `name` 写成了源码路径而不是包名。
@@ -235,6 +249,8 @@ Tool 通过 `ctx.tools.register(defineTool({...}))` 注册后，在浏览器 Con
 > 正式页面带认证：裸 `curl` 拿到 401/404 是网关表现，不代表 bundle 路由不存在；必须带 token/cookie 才能读 boot graph 和 bundle。probe 服务器用完要 kill，避免占端口。
 
 ## 最小验收命令集
+
+逐项记录证据范围：typecheck/test/build 只证明对应开发环境与测试覆盖；ModuleLoader stub 证明产物形状和桩内行为；目标 SettingsForms 的隔离投影检查不等于真实 profile 持久化或通知事件验收。浏览器实测应确认显示、写入、刷新后保留和业务生效。未执行项明确标记，不能以 boot graph、HTTP 200 或新 lib 已生成替代真实交互结论。
 
 在提交或交给发布流程前，至少保留以下命令的结果：
 
@@ -247,3 +263,56 @@ npm pack
 ```
 
 任何一条失败都不能用“开发模式可以打开”作为豁免；应记录失败层级、根因、修复和重跑结果。
+
+## 浏览器实机调试（chrome-devtools MCP）
+
+Client UI 问题（按钮不出现、抖动、闪烁、定位错）不要靠猜——直接连上用户正在运行的 DSH 页面实测。经验来自 dsh-session-manager 回退按钮的多轮排查：三次猜测性修复都不如一次实机测量。
+
+### 接入步骤
+
+1. 找进程与端口：`ps aux | rg dsh`；`lsof -iTCP -sTCP:LISTEN -P | rg node`（dsh web 默认 3080）。
+2. dsh web 需要认证。带 token 的 URL 在用户浏览器历史里（Chrome 运行中时 History 库被锁，先复制再查）：
+   ```bash
+   cp ~/Library/Application\ Support/Google/Chrome/Default/History /tmp/chrome-history.db
+   sqlite3 /tmp/chrome-history.db "SELECT url FROM urls WHERE url LIKE '%3080/?token=%' ORDER BY last_visit_time DESC LIMIT 1;"
+   ```
+3. 用 chrome-devtools MCP `new_page` 打开带 token 的 URL，后续 `navigate_page`（reload + `ignoreCache: true` 硬刷新加载新构建的 client.js）、`evaluate_script`、`take_screenshot` 全程可用。**host 代码变更仍需用户重启 dsh**；client 代码只需硬刷新。
+4. 改完即验：`pnpm build` → `ignoreCache` reload → 测量脚本 → 数字确认，闭环在一两分钟内。
+
+### 插件自带的诊断开关
+
+在插件 client 里内置 `localStorage` 调试开关 + sync 签名行（状态变化才输出一行），实机排查时一行就能定位卡在哪层：
+
+```ts
+const debugEnabled = () => { try { return localStorage.getItem('dshXxxDebug') === '1' } catch { return false } }
+// sync 末尾:JSON.stringify({ sessionId, hasChat, rows, resolved, candidates, pills })
+console.debug('[dsh-xxx] sync:', signature)
+```
+
+### 抖动/闪烁类问题的测量方法（不要用肉眼和猜测）
+
+- **滚动抖动**：rAF 循环采样滚动容器（`[data-conversation-scroll]`）`scrollTop`，记录 |Δ|>2px 的跳变序列——修复前实测 `+30px@71ms → -30px@93ms`，修复后 `[]`。
+- **闪烁帧数**：rAF 循环里检查目标内容的可见性/文本，统计出现帧数——"加载中"闪 1 帧也能量化。
+- **布局跳动**：MutationObserver 采样 + 挂载/落定两个时刻 `getBoundingClientRect()` 对比（top/left/height delta）。
+- **测量脚本的匹配条件要可靠**：曾用"文本包含某字符串"判断命令行是否可见，实际渲染文本不含该字面量，得出"0 帧可见"的假阴性结论。优先按结构性属性（`data-chat-flow-kind`、class、几何）判断，不按渲染文本。
+
+### 类型包对照法（先于实机排查）
+
+对“老插件在新宿主上功能失效”类问题，先 `npm pack` 对应版本的 `@deepseek-ai/*` 包、直接读 `.d.ts` 对照插件里的 duck-type 假设，常能一步定位：曾一次对照就发现 `UserMessageNode` 已无 `visibility` 字段、`ISessions.fork` 的注释明确写着“fork 只入目录、binding 需先 retain”。比逐个实机试探便宜得多。版本取运行时的真实版本（`ps`/lockfile/宿主 node_modules 里查）。
+
+### 症状分两层：按钮渲染 vs 点击失败
+
+“功能不生效”要先区分两层，修法完全不同：
+
+1. **按钮不渲染** = 数据链路断（快照读取、节点字段、目标计算）——用调试签名行逐字段看（hasChat/candidates/…）。
+2. **按钮在但点击失败** = 执行链路断（命令通道、宿主 API 语义变化）——点一次看按钮 title 的失败信息与 console。
+
+两层可能同时断（如 0.2.1 上的刷新：visibility 断了渲染，fork 语义断了执行），修完一层务必再实测到第二层。
+
+### 按层定位 Client UI 问题（实测顺序）
+
+1. 插件样式是否注入（`style[data-xxx]` 存在）——证明 client bundle 加载、install 运行。
+2. 调试签名行：`hasChat / rows / resolved / candidates / pills` 逐层看断在哪。
+3. 行身份属性实际值：`data-chat-anchor-key` / `data-chat-node-key` / `data-chat-flow-key` 是否存在、能否映射到快照节点。
+4. 快照读取路径是否返回 undefined（0.2.1 的 `target('chat')` vs 旧 `views.get('chat')`）。
+5. 当前会话解析（0.2.1 无 `current` 字段，看 `retainedBy.mainView`）。

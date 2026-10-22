@@ -25,6 +25,8 @@ dsh --profile web
 
 其中 `link:/absolute/path/to/plugin` 必须指向包含 `package.json`、构建产物和 patch 的插件项目根目录，不要指向 `src/` 或单个 `.ts` 文件。
 
+`link:` 只连接目录，不会把 `src` 自动编译到 `lib`。先检查实际 exports 指向哪些 Host/Client 产物，重建所有受影响入口；profile 的 patch live reload 也不等于 linked JavaScript 自动重编译或刷新。源码已有修复而页面仍旧时，先比较 src、lib 和浏览器实际收到的 bundle。`0.2.0-rc.2` 设置不可用的具体案例见 [设置迁移参考](settings-0.2-migration.md)。
+
 开发循环建议：
 
 1. 修改源码。

@@ -2,6 +2,8 @@
 
 DSH 插件不是一次性执行的脚本。插件可能因依赖、配置或 HMR 被卸载并重新加载；所有副作用必须有可逆的 Fiber 生命周期边界。
 
+DSH `0.2.0-rc.2` 中，仅 volatile 字段更新且满足 Loader 条件时保留实例并更新引用，不重新执行 `apply`。在业务回调中调用对应配置引用的 `.get()`，避免缓存旧值；普通配置变化和代码 HMR 仍按各自的重载机制处理，详见 [设置迁移参考](settings-0.2-migration.md)。
+
 ## Fiber 状态机
 
 ```text
@@ -79,3 +81,5 @@ export function apply(ctx: Context) {
 - timer、watcher、子进程和端口数量恢复到单实例水平；
 - 初始化失败后可以再次加载；
 - Client 的 ModuleLoader factory 不在 bundle 下载阶段产生副作用。
+
+另行验证 volatile 更新：实例无需重载即可读取新值，事件监听器数量保持不变。不能仅凭重新执行 `apply` 后值正确，声称已验证 volatile 实时更新。

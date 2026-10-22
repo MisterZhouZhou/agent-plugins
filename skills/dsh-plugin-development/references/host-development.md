@@ -8,13 +8,14 @@ Host 代码运行在 DSH 的 Node/Cordis 宿主中，负责服务、命令、任
 
 ```ts
 export const name = 'example'
-export interface Config {}
 export function apply(): void {}
 ```
 
-这是用于确认模块形状和 bundle 可加载性的最小示例，不代表业务插件可以忽略生命周期和配置校验。实际插件应明确 `ctx`、配置类型和需要注入的服务：
+这是用于确认模块形状和 bundle 可加载性的无配置示例，不代表业务插件可以忽略生命周期和配置校验。实际插件应明确 `ctx`、运行时配置 schema 和需要注入的服务：
 
 ```ts
+import Schema from '@deepseek-ai/schemastery'
+
 export const name = 'example'
 
 export const inject = [
@@ -22,9 +23,14 @@ export const inject = [
 ] as const
 
 export interface Config {
-  enabled?: boolean
-  dataDir?: string
+  enabled: boolean
+  dataDir: string
 }
+
+export const Config = Schema.object({
+  enabled: Schema.boolean().default(true),
+  dataDir: Schema.string().default(''),
+})
 
 export function apply(ctx: HostContext, config: Config): void {
   // 1. 校验并规范化 config
@@ -221,66 +227,54 @@ Host 测试应围绕公开行为，而不是内部字段或真实 DSH 进程。�
 
 ## 8. Settings namespace：为 Client 设置面板暴露配置
 
-当插件需要在 DSH Web 中提供可视化设置面板时，Host 端应注册 settings 命名空间，Client 端通过 `settingsScope` 读写。
+DSH `0.2.0-rc.2` 的 SettingsForms 从运行中插件导出的 Config 自动投影 volatile 字段；namespace 是 profile 条目的 `entry.options.id`，不一定等于插件名或包名。没有 volatile 字段的 Config 不会暴露表单。
 
-### 注册命名空间
+### Config 表单（0.2.0-rc.2）
 
 ```ts
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
+import Schema from '@deepseek-ai/schemastery'
 
 export const name = 'dsh-example'
-export const inject = ['settings']  // 需要 settings 服务
 
-const EXAMPLE_NS = settingsNamespace('dsh-example')  // 命名空间 = 插件名
+export interface Config {
+  mySwitch: Volatile<boolean>
+}
+
+export const Config = Schema.object({
+  mySwitch: Schema.boolean().default(true).volatile(),
+})
 
 export function apply(ctx: Context, config: Config): void {
-  // 注册命名空间，Client 端通过 settingsScope({ namespace: 'dsh-example' }) 访问
-  const scope = ctx.settings.register(EXAMPLE_NS, Schema.object({
-    mySwitch: Schema.boolean().default(true),
-  }), {
-    base: { mySwitch: true },   // 组合层默认值
-    applies: 'live',            // 'live' = 即时生效；'restart' = 需重启
-  })
-
-  // 将 YAML 配置值写为初始用户覆盖（使面板显示实际生效状态）
-  if (config.mySwitch !== undefined) {
-    scope.update({ mySwitch: config.mySwitch })
-  }
+  // 在业务回调中读取 config.mySwitch.get()；仅为 Config 表单无需注入 settings。
 }
 ```
 
-### 使用 watch() 响应设置变更
+### 读取实时值
 
-Client 端 `scope.set(field, value)` 写入后，Host 端通过 `watch()` 获取实时更新：
+Client 使用 `ctx.configForms.get(entryId)` 的控制器写入后，Host 在业务执行时通过 volatile 引用 `.get()` 获取当前值：
 
 ```ts
-// 用闭包变量追踪最新值
-let liveConfig = scope.get()
-scope.watch((next) => {
-  liveConfig = next
-})
-
-// 在事件处理器中读取 liveConfig
+// 在实际事件处理器中读取，不缓存 apply 时的初始值。
 ctx.on('session/event', (session, event) => {
-  const current = liveConfig  // 始终为最新值
-  if (!current.mySwitch) return
+  if (!config.mySwitch.get()) return
   // ...
 })
 ```
 
 | API | Host 端 | Client 端 |
 |---|---|---|
-| 获取当前值 | `scope.get(): T` | `scope.getSnapshot(): SettingsScopeSnapshot<T>` |
-| 写入 | `scope.update(patch): Promise<void>` | `scope.set(field, value): Promise<void>` |
-| 订阅变更 | `scope.watch((next, prev) => ...)` | `scope.subscribe(() => ...)` |
-| 清除覆盖 | `scope.replace(section): Promise<void>` | `scope.unset(field): Promise<void>` |
-| 注册 | `ctx.settings.register(ns, schema, opts)` | — |
+| 获取当前值 | `config.mySwitch.get()` | `form.getSnapshot(): ConfigFormSnapshot<T>` |
+| 写入 | 由 SettingsForms/Loader 应用 | `form.set(field, value): Promise<boolean>` |
+| 订阅变更 | 事件回调读取当前 volatile 值 | `form.subscribe(() => ...)` |
+| 清除覆盖 | 由 SettingsForms/Loader 应用 | `form.unset(field): Promise<boolean>` |
+| namespace | profile entry id，自动收集 | `ctx.configForms.get(entryId)` |
 
-> **注意**：Host 端用 `watch`，Client 端用 `subscribe`，方法名不同。
+仅 volatile 更新且满足 Loader 条件时实例保留，不重新调用 `apply`。不需要额外的 `metadata.settings`、`settingsNamespace()`、`ctx.settings.register()` 或旧 scope/watch；支持其他版本前先核对该版本 SDK。嵌套对象示例和完整排错流程见 [DSH 0.2.0-rc.2 设置迁移](settings-0.2-migration.md)。
 
 ### tsdown external 配置
 
-`@deepseek-ai/dsh-settings` 和 `@deepseek-ai/cordis` 由 DSH 运行时提供，必须在 tsdown Host 构建中设为 external：
+Host 的 external 按实际运行时 import 配置。仅导出 Config 不需要引入 dsh-settings 实现；使用 Schemastery 时把它声明为运行时 dependencies，并按包的构建策略处理：
 
 ```ts
 // tsdown.config.ts
@@ -290,13 +284,13 @@ export default defineConfig([
     format: ['esm'],
     outDir: 'lib',
     clean: true,
-    external: ['@deepseek-ai/cordis', '@deepseek-ai/dsh-settings'],
+    external: ['@deepseek-ai/cordis', '@deepseek-ai/schemastery'],
   },
   // ... client entry
 ])
 ```
 
-**不 external 的后果**：`settingsNamespace()` 生成的 branded string 与 DSH 运行时的副本不匹配，导致 `ctx.settings.register()` 静默失败，Client 端 `settingsScope` 始终返回 `status: 'unavailable'`。
+`unavailable` 应沿 namespace、volatile 字段、运行状态和连接模式调查，不能直接归因为 external 或 branded string 副本不匹配。
 
 ### 可选服务的 `ctx.get` 与 inject：别被 “xxx service missing” 骗了
 
